@@ -27,15 +27,9 @@
 <div id="loading">잠시만 기다려 주세요...</div>
 
 <script>
-    /**
-     * 설정 영역
-     */
-    // 1. 비밀번호의 SHA-256 해시값을 여기에 입력하세요.
-    // 예: '1234'의 해시값은 '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4' 입니다.
-    const CORRECT_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'; 
+    const CORRECT_HASH = 'b18996a6273326d2d9e99c6be2397f894a524dfd5cea8d18fe562c568355ee6d'; 
     const STORAGE_KEY = 'site_auth_token';
 
-    // SHA-256 변환 함수
     async function sha256(message) {
         const msgBuffer = new TextEncoder().encode(message);
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
