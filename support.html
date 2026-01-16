@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비밀 주소 생성기</title>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h1 { font-size: 1.5rem; color: #333; margin-bottom: 1.5rem; text-align: center; }
+        .input-group { margin-bottom: 1.2rem; }
+        label { display: block; font-size: 0.9rem; color: #666; margin-bottom: 0.5rem; font-weight: bold; }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        input:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 2px rgba(0,123,255,0.25); }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: background 0.2s; }
+        button:hover { background-color: #0056b3; }
+        #result-box { margin-top: 2rem; padding-top: 1.5rem; border-top: 2px dashed #eee; display: none; }
+        .result-url { background: #f1f3f5; padding: 10px; border-radius: 4px; word-break: break-all; font-family: monospace; font-size: 0.9rem; border: 1px solid #e9ecef; margin-bottom: 10px; }
+        .copy-btn { background-color: #28a745; margin-top: 5px; }
+        .copy-btn:hover { background-color: #218838; }
+        .hint { font-size: 0.8rem; color: #999; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>비밀 주소 생성기</h1>
+    
+    <div class="input-group">
+        <label>기본 시스템 주소 (myadal.html)</label>
+        <input type="text" id="base-url" value="https://lunaria1.github.io/cccccccccccc/myadal.html">
+        <p class="hint">본인의 myadal.html 주소를 입력하세요.</p>
+    </div>
+
+    <div class="input-group">
+        <label>연결할 대상 URL (이동하고 싶은 주소)</label>
+        <input type="text" id="target-url" placeholder="https://google.com">
+    </div>
+
+    <button onclick="generateLink()">비밀 주소 생성하기!</button>
+
+    <div id="result-box">
+        <label>생성된 비밀 주소</label>
+        <div class="result-url" id="final-link"></div>
+        <button class="copy-btn" onclick="copyToClipboard()">주소 복사하기</button>
+    </div>
+</div>
+
+<script>
+    function generateLink() {
+        const baseUrl = document.getElementById('base-url').value.trim();
+        const targetUrl = document.getElementById('target-url').value.trim();
+
+        if (!targetUrl) {
+            alert("이동할 대상 URL을 입력해주세요.");
+            return;
+        }
+
+        try {
+            // 한글 주소 등이 포함되어도 깨지지 않도록 처리하여 Base64 인코딩
+            const encodedData = btoa(encodeURIComponent(targetUrl).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+                return String.fromCharCode('0x' + p1);
+            }));
+
+            // 최종 주소 조합 (물음표 기호 포함)
+            const finalLink = baseUrl + "?" + encodedData;
+
+            document.getElementById('final-link').innerText = finalLink;
+            document.getElementById('result-box').style.display = 'block';
+        } catch (e) {
+            alert("주소 생성 중 오류가 발생했습니다. 올바른 URL인지 확인해주세요.");
+            console.error(e);
+        }
+    }
+
+    function copyToClipboard() {
+        const linkText = document.getElementById('final-link').innerText;
+        
+        // 임시 텍스트 영역을 만들어 복사 수행
+        const tempElem = document.createElement('textarea');
+        tempElem.value = linkText;
+        document.body.appendChild(tempElem);
+        tempElem.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempElem);
+
+        alert("주소가 클립보드에 복사되었습니다!");
+    }
+</script>
+
+</body>
+</html>
