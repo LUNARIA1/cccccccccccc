@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting...</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f4f4f9; }
+        .container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .error { color: red; font-size: 0.9rem; margin-top: 10px; display: none; }
+        #loading { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="auth-box" style="display: none;">
+    <h2>비밀번호 입력</h2>
+    <p>이동하려면 비밀번호를 입력하세요.</p>
+    <input type="password" id="pw-input" placeholder="Password">
+    <button onclick="checkPassword()">확인</button>
+    <p class="error" id="error-msg">비밀번호가 틀렸습니다.</p>
+</div>
+
+<div id="loading">잠시만 기다려 주세요...</div>
+
+<script>
+    /**
+     * 설정 영역
+     */
+    // 1. 비밀번호의 SHA-256 해시값을 여기에 입력하세요.
+    // 예: '1234'의 해시값은 '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4' 입니다.
+    const CORRECT_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4'; 
+    const STORAGE_KEY = 'site_auth_token';
+
+    // SHA-256 변환 함수
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Base64 디코딩 및 이동 함수
+    function processRedirect() {
+        // URL의 쿼리 스트링(? 뒤의 전체 문자열)을 가져옴
+        const encodedData = window.location.search.substring(1);
+        
+        if (!encodedData) {
+            document.body.innerHTML = "잘못된 접근입니다. URL에 데이터가 없습니다.";
+            return;
+        }
+
+        try {
+            // Base64 디코딩 (한글 깨짐 방지를 위해 decodeURIComponent 조합)
+            const decodedUrl = decodeURIComponent(atob(encodedData));
+            window.location.href = decodedUrl;
+        } catch (e) {
+            alert("잘못된 데이터 형식입니다.");
+            console.error(e);
+        }
+    }
+
+    // 비밀번호 체크 실행
+    async function checkPassword() {
+        const input = document.getElementById('pw-input').value;
+        const hashedInput = await sha256(input);
+
+        if (hashedInput === CORRECT_HASH) {
+            // 캐시에 저장 (다음 방문 시 생략)
+            localStorage.setItem(STORAGE_KEY, CORRECT_HASH);
+            processRedirect();
+        } else {
+            document.getElementById('error-msg').style.display = 'block';
+        }
+    }
+
+    // 초기 실행 로직
+    window.onload = async function() {
+        const savedToken = localStorage.getItem(STORAGE_KEY);
+        
+        if (savedToken === CORRECT_HASH) {
+            // 이미 인증된 경우 바로 리다이렉트 처리
+            document.getElementById('loading').style.display = 'block';
+            processRedirect();
+        } else {
+            // 인증이 필요한 경우 입력창 표시
+            document.getElementById('auth-box').style.display = 'block';
+        }
+    };
+</script>
+
+</body>
+</html>
