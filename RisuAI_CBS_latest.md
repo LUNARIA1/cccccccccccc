@@ -1,3 +1,9 @@
+---
+layout: default
+title: RisuAI CBS Curly Brace Syntax 완전 가이드
+render_with_liquid: false
+---
+
 # RisuAI CBS (Curly Brace Syntax) 완전 가이드
 
 > **최종 업데이트**: 2026-01-07  
@@ -601,3 +607,4 @@ UTC 시각: {{isotime}}
 
 **문서 작성**: AI Analysis (직접 코드 탐색)  
 **라이선스**: RisuAI 프로젝트 라이선스를 따름
+
