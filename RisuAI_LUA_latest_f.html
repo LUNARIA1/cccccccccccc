@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>RisuAI Lua 스크립팅 API 완전 가이드</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        h1,
+        h2,
+        h3,
+        h4 {
+            color: #333;
+            margin-top: 1.5em;
+        }
+
+        h1 {
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+
+        h2 {
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background-color: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+
+        pre code {
+            background-color: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        blockquote {
+            border-left: 4px solid #4CAF50;
+            padding-left: 20px;
+            margin: 20px 0;
+            background-color: #f0f8f0;
+            padding: 15px 20px;
+        }
+
+        a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        hr {
+            border: none;
+            border-top: 2px solid #ddd;
+            margin: 30px 0;
+        }
+
+        .hljs-string {
+            color: #98c379;
+        }
+
+        .hljs-keyword {
+            color: #c678dd;
+        }
+
+        .hljs-number {
+            color: #d19a66;
+        }
+
+        .hljs-comment {
+            color: #5c6370;
+            font-style: italic;
+        }
+
+        .hljs-function {
+            color: #61afef;
+        }
+
+        .toc {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .toc ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+
+        .toc>ul {
+            padding-left: 0;
+        }
+
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>RisuAI Lua 스크립팅 API 완전 가이드</h1>
+    <blockquote>
+        <p><strong>최신 문서</strong> - RisuAI 코드베이스 분석을 통해 생성됨<br>
+            <strong>출처</strong>: <code>/src/ts/process/scriptings.ts</code> 및 관련 파일<br>
+            <strong>사용법</strong>: Lua 스크립트는 RisuAI 모듈 및 캐릭터 트리거 스크립트(V3 또는 Lua 선택)에서 사용 가능
+        </p>
+    </blockquote>
+
+    <div class="toc">
+        <h2>목차</h2>
+        <ul>
+            <li><a href="#overview">1. 개요</a></li>
+            <li><a href="#getting-started">2. 시작하기</a></li>
+            <li><a href="#event-handlers">3. 이벤트 핸들러</a></li>
+            <li><a href="#core-api">4. 코어 API 함수</a></li>
+            <li><a href="#chat-management">5. 채팅 관리</a></li>
+            <li><a href="#variable-management">6. 변수 관리</a></li>
+            <li><a href="#ui-functions">7. UI 함수</a></li>
+            <li><a href="#llm-integration">8. LLM 통합</a></li>
+            <li><a href="#character-functions">9. 캐릭터 함수</a></li>
+            <li><a href="#lorebook-functions">10. 로어북 함수</a></li>
+            <li><a href="#utility-functions">11. 유틸리티 함수</a></li>
+            <li><a href="#advanced-features">12. 고급 기능</a></li>
+            <li><a href="#json-library">13. JSON 라이브러리</a></li>
+            <li><a href="#best-practices">14. 모범 사례</a></li>
+            <li><a href="#examples">15. 예시 스크립트</a></li>
+        </ul>
+    </div>
+
+    <hr>
+
+    <div class="section" id="overview">
+        <h2>📌 1. 개요</h2>
+        <p>RisuAI의 Lua 스크립팅 시스템을 사용하면 캐릭터와 모듈에 대한 동적 동작을 생성할 수 있습니다. Lua 스크립트는 채팅 조작, LLM 상호 작용 등을 위한 포괄적인 API에 접근할 수 있는
+            샌드박스 환경에서 실행됩니다.</p>
+
+        <h3>스크립트 유형</h3>
+        <ul>
+            <li><strong>트리거 스크립트</strong>: 이벤트에서 실행되는 캐릭터별 스크립트</li>
+            <li><strong>모듈 스크립트</strong>: 모든 채팅에서 실행되는 전역 스크립트</li>
+            <li><strong>편집 트리거</strong>: 입력/출력/표시 데이터를 수정하는 스크립트</li>
+        </ul>
+
+        <h3>보안 모델</h3>
+        <table>
+            <tr>
+                <th>접근 수준</th>
+                <th>설명</th>
+            </tr>
+            <tr>
+                <td><strong>안전 접근 (Safe Access)</strong></td>
+                <td>기본 채팅 및 변수 작업</td>
+            </tr>
+            <tr>
+                <td><strong>편집 표시 접근 (Edit Display Access)</strong></td>
+                <td>표시 출력을 수정할 수 있음</td>
+            </tr>
+            <tr>
+                <td><strong>저수준 접근 (Low Level Access)</strong></td>
+                <td>고급 기능(LLM, 이미지 생성, 네트워크 요청)에 대한 전체 접근</td>
+            </tr>
+        </table>
+    </div>
+
+    <hr>
+
+    <div class="section" id="getting-started">
+        <h2>🚀 2. 시작하기</h2>
+        <h3>기본 스크립트 구조</h3>
+        <pre><code><span class="hljs-comment">-- 다양한 트리거에 대한 이벤트 핸들러 정의</span>
+<span class="hljs-keyword">function</span> <span class="hljs-function">onStart</span>(id)
+    <span class="hljs-comment">-- 채팅 시작 시 실행</span>
+    log(<span class="hljs-string">"채팅이 시작되었습니다!"</span>)
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-keyword">function</span> <span class="hljs-function">onInput</span>(id)
+    <span class="hljs-comment">-- 사용자가 입력을 보낼 때 실행</span>
+    log(<span class="hljs-string">"사용자 입력을 받았습니다"</span>)
+<span class="hljs-keyword">end</span>
+
+<span class="hljs-keyword">function</span> <span class="hljs-function">onOutput</span>(id)
+    <span class="hljs-comment">-- AI가 출력을 생성한 후 실행</span>
+    log(<span class="hljs-string">"AI 출력이 생성되었습니다"</span>)
+<span class="hljs-keyword">end</span></code></pre>
+
+        <h3>편집 리스너</h3>
+        <pre><code><span class="hljs-comment">-- 다양한 편집 이벤트 리스닝</span>
+listenEdit(<span class="hljs-string">'editInput'</span>, <span class="hljs-keyword">function</span>(id, data, meta)
+    <span class="hljs-comment">-- 처리 전 사용자 입력 수정</span>
+    <span class="hljs-keyword">return</span> data
+<span class="hljs-keyword">end</span>)
+
+listenEdit(<span class="hljs-string">'editOutput'</span>, <span class="hljs-keyword">function</span>(id, data, meta)
+    <span class="hljs-comment">-- 표시 전 AI 출력 수정</span>
+    <span class="hljs-keyword">return</span> data
+<span class="hljs-keyword">end</span>)
+
+listenEdit(<span class="hljs-string">'editDisplay'</span>, <span class="hljs-keyword">function</span>(id, data, meta)
+    <span class="hljs-comment">-- 최종 표시 출력 수정</span>
+    <span class="hljs-keyword">return</span> data
+<span class="hljs-keyword">end</span>)
+
+listenEdit(<span class="hljs-string">'editRequest'</span>, <span class="hljs-keyword">function</span>(id, data, meta)
+    <span class="hljs-comment">-- LLM에 대한 요청 수정 (data는 OpenAIChat[] 배열)</span>
+    <span class="hljs-keyword">return</span> data
+<span class="hljs-keyword">end</span>)</code></pre>
+    </div>
+
+    <hr>
+
+    <div class="section" id="event-handlers">
+        <h2>📡 3. 이벤트 핸들러</h2>
+        <table>
+            <tr>
+                <th>핸들러</th>
+                <th>설명</th>
+                <th>파라미터</th>
+            </tr>
+            <tr>
+                <td><code>onStart(id)</code></td>
+                <td>채팅 시작 시 트리거됨</td>
+                <td><code>id</code>: 접근 키</td>
+            </tr>
+            <tr>
+                <td><code>onInput(id)</code></td>
+                <td>사용자 입력 시 트리거됨</td>
+                <td><code>id</code>: 접근 키</td>
+            </tr>
+            <tr>
+                <td><code>onOutput(id)</code></td>
+                <td>AI 출력 후 트리거됨</td>
+                <td><code>id</code>: 접근 키</td>
+            </tr>
+            <tr>
+                <td><code>onButtonClick(id, data)</code></td>
+                <td>버튼 클릭 시 트리거됨</td>
+                <td><code>id</code>: 접근 키, <code>data</code>: 버튼 데이터</td>
+            </tr>
+        </table>
+    </div>
+
+    <hr>
+
+    <div class="section" id="core-api">
+        <h2>⚙️ 4. 코어 API 함수</h2>
+        <h3>로깅</h3>
+        <pre><code>log(value)</code></pre>
+        <p>브라우저 콘솔에 데이터를 출력합니다.</p>
+
+        <h3>CBS (중괄호 구문) 파서</h3>
+        <pre><code>result = cbs(value)</code></pre>
+        <p>문자열에서 중괄호 구문을 파싱합니다 (예: <code>{{char}}</code>, <code>{{user}}</code>).</p>
+        <pre><code><span class="hljs-keyword">local</span> msg = cbs(<span class="hljs-string">"안녕하세요 {{user}}, 저는 {{char}}입니다"</span>)
+log(msg) <span class="hljs-comment">-- "안녕하세요 홍길동, 저는 앨리스입니다"</span></code></pre>
+    </div>
+
+    <hr>
+
+    <div class="section" id="chat-management">
+        <h2>💬 5. 채팅 관리</h2>
+        <table>
+            <tr>
+                <th>함수</th>
+                <th>설명</th>
+                <th>사용 예시</th>
+            </tr>
+            <tr>
+                <td><code>getChat(id, index)</code></td>
+                <td>인덱스로 특정 채팅 메시지 가져오기</td>
+                <td><code>getChat(id, -1)</code> → 마지막 메시지</td>
+            </tr>
+            <tr>
+                <td><code>getFullChat(id)</code></td>
+                <td>모든 채팅 메시지 가져오기</td>
+                <td><code>getFullChat(id)</code></td>
+            </tr>
+            <tr>
+                <td><code>setChat(id, index, value)</code></td>
+                <td>특정 채팅 메시지 수정</td>
+                <td><code>setChat(id, -1, "수정됨")</code></td>
+            </tr>
+            <tr>
+                <td><code>setChatRole(id, index, role)</code></td>
+                <td>특정 메시지의 역할 변경</td>
+                <td><code>setChatRole(id, -1, 'user')</code></td>
+            </tr>
+            <tr>
+                <td><code>setFullChat(id, messages)</code></td>
+                <td>전체 채팅 기록 대체</td>
+                <td><code>setFullChat(id, newChat)</code></td>
+            </tr>
+            <tr>
+                <td><code>addChat(id, role, value)</code></td>
+                <td>채팅에 새 메시지 추가</td>
+                <td><code>addChat(id, 'char', '메시지')</code></td>
+            </tr>
+            <tr>
+                <td><code>insertChat(id, index, role, value)</code></td>
+                <td>특정 위치에 메시지 삽입</td>
+                <td><code>insertChat(id, 0, 'system', '...')</code></td>
+            </tr>
+            <tr>
+                <td><code>removeChat(id, index)</code></td>
+                <td>특정 메시지 삭제</td>
+                <td><code>removeChat(id, -1)</code></td>
+            </tr>
+            <tr>
+                <td><code>cutChat(id, start, end)</code></td>
+                <td>지정 범위만 유지</td>
+                <td><code>cutChat(id, 0, 10)</code></td>
+            </tr>
+            <tr>
+                <td><code>getChatLength(id)</code></td>
+                <td>메시지 수 가져오기</td>
+                <td><code>getChatLength(id)</code></td>
+            </tr>
+            <tr>
+                <td><code>getCharacterLastMessage(id)</code></td>
+                <td>캐릭터 마지막 메시지</td>
+                <td><code>getCharacterLastMessage(id)</code></td>
+            </tr>
+            <tr>
+                <td><code>getUserLastMessage(id)</code></td>
+                <td>사용자 마지막 메시지</td>
+                <td><code>getUserLastMessage(id)</code></td>
+            </tr>
+        </table>
+    </div>
+
+    <hr>
+
+    <div class="section" id="variable-management">
+        <h2>📊 6. 변수 관리</h2>
+        <table>
+            <tr>
+                <th>함수</th>
+                <th>설명</th>
+                <th>사용 예시</th>
+            </tr>
+            <tr>
+                <td><code>getChatVar(id, key)</code></td>
+                <td>채팅 범위 변수 가져오기</td>
+                <td><code>getChatVar(id, 'count')</code></td>
+            </tr>
+            <tr>
+                <td><code>setChatVar(id, key, value)</code></td>
+                <td>채팅 범위 변수 설정</td>
+                <td><code>setChatVar(id, 'count', '42')</code></td>
+            </tr>
+            <tr>
+                <td><code>getGlobalVar(id, key)</code></td>
+                <td>전역 변수 가져오기</td>
+                <td><code>getGlobalVar(id, 'version')</code></td>
+            </tr>
+            <tr>
+                <td><code>getState(id, name)</code></td>
+                <td>상태 가져오기 (자동 JSON 디코드)</td>
+                <td><code>getState(id, 'prefs')</code></td>
+            </tr>
+            <tr>
+                <td><code>setState(id, name, value)</code></td>
+                <td>상태 설정 (자동 JSON 인코드)</td>
+                <td><code>setState(id, 'prefs', {theme='dark'})</code></td>
+            </tr>
+        </table>
+
+        <pre><code><span class="hljs-comment">-- 복잡한 데이터 저장 예시</span>
+setState(id, <span class="hljs-string">'userPrefs'</span>, {
+    theme = <span class="hljs-string">'dark'</span>,
+    fontSize = <span class="hljs-number">14</span>,
+    colors = {<span class="hljs-string">'red'</span>, <span class="hljs-string">'blue'</span>, <span class="hljs-string">'green'</span>}
+})
+
+<span class="hljs-keyword">local</span> prefs = getState(id, <span class="hljs-string">'userPrefs'</span>)
+log(<span class="hljs-string">"테마: "</span> .. prefs.theme)</code></pre>
+    </div>
+
+    <hr>
+
+    <div class="section" id="ui-functions">
+        <h2>🖥️ 7. UI 함수</h2>
+        <table>
+            <tr>
+                <th>함수</th>
+                <th>설명</th>
+                <th>반환값</th>
+            </tr>
+            <tr>
+                <td><code>alertError(id, message)</code></td>
+                <td>오류 알림 표시</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>alertNormal(id, message)</code></td>
+                <td>일반 알림 표시</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>alertInput(id, prompt):await()</code></td>
+                <td>사용자 입력 받기</td>
+                <td>string</td>
+            </tr>
+            <tr>
+                <td><code>alertSelect(id, options):await()</code></td>
+                <td>선택 대화상자</td>
+                <td>string</td>
+            </tr>
+            <tr>
+                <td><code>alertConfirm(id, message):await()</code></td>
+                <td>확인 대화상자</td>
+                <td>boolean</td>
+            </tr>
+            <tr>
+                <td><code>reloadDisplay(id)</code></td>
+                <td>전체 GUI 새로고침</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>reloadChat(id, index)</code></td>
+                <td>특정 메시지 새로고침</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>stopChat(id)</code></td>
+                <td>현재 채팅/생성 중지</td>
+                <td>-</td>
+            </tr>
+        </table>
+    </div>
+
+    <hr>
+
+    <div class="section" id="llm-integration">
+        <h2>🤖 8. LLM 통합</h2>
+        <h3>간단한 LLM 호출</h3>
+        <pre><code>result = simpleLLM(id, prompt):await()</code></pre>
+        <p><strong>파라미터</strong>: <code>id</code> (접근 키, 저수준 접근 필요), <code>prompt</code> (텍스트 프롬프트)<br>
+            <strong>반환값</strong>: <code>{success: boolean, result: string}</code>
+        </p>
+
+        <h3>고급 LLM 호출</h3>
+        <pre><code>result = LLM(id, messages, useMultimodal):await()</code></pre>
+
+        <pre><code><span class="hljs-keyword">local</span> messages = {
+    {role = <span class="hljs-string">'system'</span>, content = <span class="hljs-string">'당신은 유용한 어시스턴트입니다'</span>},
+    {role = <span class="hljs-string">'user'</span>, content = <span class="hljs-string">'농담을 해주세요'</span>}
+}
+
+<span class="hljs-keyword">local</span> result = LLM(id, messages):await()
+<span class="hljs-keyword">if</span> result.success <span class="hljs-keyword">then</span>
+    log(<span class="hljs-string">"LLM 답변: "</span> .. result.result)
+<span class="hljs-keyword">end</span></code></pre>
+
+        <h3>보조 LLM 호출</h3>
+        <pre><code>result = axLLM(id, messages, useMultimodal):await()</code></pre>
+        <p>보조 LLM 호출 ('model' 대신 'otherAx' 모델 사용)</p>
+    </div>
+
+    <hr>
+
+    <div class="section" id="character-functions">
+        <h2>👤 9. 캐릭터 함수</h2>
+        <table>
+            <tr>
+                <th>함수</th>
+                <th>설명</th>
+                <th>접근 수준</th>
+            </tr>
+            <tr>
+                <td><code>getName(id)</code></td>
+                <td>캐릭터 이름 가져오기</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>setName(id, name)</code></td>
+                <td>캐릭터 이름 설정</td>
+                <td>안전 접근</td>
+            </tr>
+            <tr>
+                <td><code>getDescription(id)</code></td>
+                <td>캐릭터 설명 가져오기</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>setDescription(id, desc)</code></td>
+                <td>캐릭터 설명 설정</td>
+                <td>안전 접근</td>
+            </tr>
+            <tr>
+                <td><code>getCharacterFirstMessage(id)</code></td>
+                <td>첫 번째 메시지 가져오기</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>setCharacterFirstMessage(id, msg)</code></td>
+                <td>첫 번째 메시지 설정</td>
+                <td>안전 접근</td>
+            </tr>
+            <tr>
+                <td><code>getCharacterImage(id):await()</code></td>
+                <td>캐릭터 이미지 인레이 태그</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>getPersonaName(id)</code></td>
+                <td>페르소나 이름</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>getPersonaDescription(id)</code></td>
+                <td>페르소나 설명</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td><code>getPersonaImage(id):await()</code></td>
+                <td>페르소나 이미지</td>
+                <td>-</td>
+            </tr>
+        </table>
+    </div>
+
+    <hr>
+
+    <div class="section" id="lorebook-functions">
+        <h2>📚 10. 로어북 함수</h2>
+        <table>
+            <tr>
+                <th>함수</th>
+                <th>설명</th>
+            </tr>
+            <tr>
+                <td><code>getLoreBooks(id, search)</code></td>
+                <td>검색 문자열과 일치하는 로어북 항목</td>
+            </tr>
+            <tr>
+                <td><code>loadLoreBooks(id, reserveTokens):await()</code></td>
+                <td>토큰 예산 내 활성 로어북 로드</td>
+            </tr>
+            <tr>
+                <td><code>upsertLocalLoreBook(id, name, content, options)</code></td>
+                <td>로컬 로어북 생성/업데이트</td>
+            </tr>
+        </table>
+
+        <pre><code>upsertLocalLoreBook(id, <span class="hljs-string">"important_fact"</span>, <span class="hljs-string">"하늘은 파랗다"</span>, {
+    alwaysActive = <span class="hljs-keyword">true</span>,
+    insertOrder = <span class="hljs-number">50</span>,
+    key = <span class="hljs-string">"하늘, 날씨"</span>
+})</code></pre>
+    </div>
+
+    <hr>
+
+    <div class="section" id="utility-functions">
+        <h2>🔧 11. 유틸리티 함수</h2>
+        <table>
+            <tr>
+                <th>함수</th>
+                <th>설명</th>
+            </tr>
+            <tr>
+                <td><code>getTokens(id, text):await()</code></td>
+                <td>텍스트 토큰 수</td>
+            </tr>
+            <tr>
+                <td><code>sleep(id, ms):await()</code></td>
+                <td>지정 시간 대기</td>
+            </tr>
+            <tr>
+                <td><code>hash(id, text):await()</code></td>
+                <td>텍스트 해시 생성</td>
+            </tr>
+            <tr>
+                <td><code>getAuthorsNote(id)</code></td>
+                <td>작가의 노트 가져오기</td>
+            </tr>
+            <tr>
+                <td><code>getBackgroundEmbedding(id)</code></td>
+                <td>배경 HTML 가져오기</td>
+            </tr>
+            <tr>
+                <td><code>setBackgroundEmbedding(id, html)</code></td>
+                <td>배경 HTML 설정</td>
+            </tr>
+        </table>
+    </div>
+
+    <hr>
+
+    <div class="section" id="advanced-features">
+        <h2>🔬 12. 고급 기능</h2>
+        <h3>유사도 검색</h3>
+        <pre><code>results = similarity(id, source, candidates):await()</code></pre>
+        <p>임베딩을 사용하여 유사한 문자열을 찾습니다.</p>
+
+        <h3>HTTP 요청</h3>
+        <pre><code>response = request(id, url):await()</code></pre>
+        <p><strong>제한</strong>: HTTPS만, 최대 120자, GET만, 분당 5건</p>
+
+        <h3>이미지 생성</h3>
+        <pre><code>imageTag = generateImage(id, prompt, negativePrompt):await()</code></pre>
+    </div>
+
+    <hr>
+
+    <div class="section" id="json-library">
+        <h2>📋 13. JSON 라이브러리</h2>
+        <pre><code><span class="hljs-comment">-- JSON 인코드</span>
+<span class="hljs-keyword">local</span> jsonStr = json.encode({name = <span class="hljs-string">"Alice"</span>, age = <span class="hljs-number">30</span>})
+
+<span class="hljs-comment">-- JSON 디코드</span>
+<span class="hljs-keyword">local</span> data = json.decode(<span class="hljs-string">'{"name":"Bob","score":100}'</span>)
+log(data.name) <span class="hljs-comment">-- "Bob"</span></code></pre>
+    </div>
+
+    <hr>
+
+    <div class="section" id="best-practices">
+        <h2>✅ 14. 모범 사례</h2>
+        <h3>1. 비동기 함수에는 항상 Await 사용</h3>
+        <pre><code><span class="hljs-comment">-- 잘못됨</span>
+<span class="hljs-keyword">local</span> result = LLM(id, messages)
+
+<span class="hljs-comment">-- 올바름</span>
+<span class="hljs-keyword">local</span> result = LLM(id, messages):await()</code></pre>
+
+        <h3>2. 오류 처리</h3>
+        <pre><code><span class="hljs-keyword">local</span> success, error = pcall(<span class="hljs-keyword">function</span>()
+    <span class="hljs-keyword">local</span> result = simpleLLM(id, <span class="hljs-string">"테스트"</span>):await()
+    <span class="hljs-keyword">if not</span> result.success <span class="hljs-keyword">then</span>
+        alertError(id, <span class="hljs-string">"LLM 오류: "</span> .. result.result)
+    <span class="hljs-keyword">end</span>
+<span class="hljs-keyword">end</span>)</code></pre>
+
+        <h3>3. 복잡한 데이터에는 State 사용</h3>
+        <pre><code>setState(id, <span class="hljs-string">'config'</span>, {enabled = <span class="hljs-keyword">true</span>, maxLength = <span class="hljs-number">100</span>})
+<span class="hljs-keyword">local</span> config = getState(id, <span class="hljs-string">'config'</span>)</code></pre>
+    </div>
+
+    <hr>
+
+    <div class="section" id="examples">
+        <h2>📝 15. 예시 스크립트</h2>
+        <h3>메시지 카운터</h3>
+        <pre><code><span class="hljs-keyword">function</span> onOutput(id)
+    <span class="hljs-keyword">local</span> count = getChatVar(id, <span class="hljs-string">'messageCount'</span>)
+    <span class="hljs-keyword">if</span> count == <span class="hljs-string">""</span> <span class="hljs-keyword">then</span> count = <span class="hljs-string">"0"</span> <span class="hljs-keyword">end</span>
+    count = tonumber(count) + <span class="hljs-number">1</span>
+    setChatVar(id, <span class="hljs-string">'messageCount'</span>, tostring(count))
+    <span class="hljs-keyword">if</span> count % <span class="hljs-number">10</span> == <span class="hljs-number">0</span> <span class="hljs-keyword">then</span>
+        alertNormal(id, count .. <span class="hljs-string">"개의 메시지를 보냈습니다!"</span>)
+    <span class="hljs-keyword">end</span>
+<span class="hljs-keyword">end</span></code></pre>
+
+        <h3>자동 요약</h3>
+        <pre><code><span class="hljs-keyword">function</span> onOutput(id)
+    <span class="hljs-keyword">local</span> chatLength = getChatLength(id)
+    <span class="hljs-keyword">if</span> chatLength % <span class="hljs-number">20</span> == <span class="hljs-number">0</span> <span class="hljs-keyword">then</span>
+        <span class="hljs-keyword">local</span> result = simpleLLM(id, <span class="hljs-string">"대화를 요약해주세요"</span>):await()
+        <span class="hljs-keyword">if</span> result.success <span class="hljs-keyword">then</span>
+            setState(id, <span class="hljs-string">'lastSummary'</span>, {summary = result.result})
+            alertNormal(id, <span class="hljs-string">"채팅이 요약되었습니다!"</span>)
+        <span class="hljs-keyword">end</span>
+    <span class="hljs-keyword">end</span>
+<span class="hljs-keyword">end</span></code></pre>
+    </div>
+
+    <hr>
+
+    <div class="section">
+        <h2>📌 요약</h2>
+        <p>RisuAI의 Lua 스크립팅 API는 다음을 제공합니다:</p>
+        <ul>
+            <li>✅ 동적 채팅 조작</li>
+            <li>✅ LLM 통합 및 연쇄</li>
+            <li>✅ 캐릭터 커스터마이징</li>
+            <li>✅ 상태 유지 동작</li>
+            <li>✅ UI 상호 작용</li>
+            <li>✅ 네트워크 요청 (제한적)</li>
+            <li>✅ 이미지 생성</li>
+            <li>✅ 로어북 관리</li>
+        </ul>
+        <p><strong>기억하세요:</strong></p>
+        <ul>
+            <li>비동기 함수에는 <code>:await()</code> 사용</li>
+            <li><code>pcall</code>로 오류 처리</li>
+            <li>복잡한 데이터에는 <code>setState</code> 사용</li>
+            <li>접근 요구 사항 확인 (Safe/Low Level)</li>
+        </ul>
+        <p>즐거운 스크립팅 되세요! 🚀</p>
+    </div>
+
+</body>
+
+</html>
