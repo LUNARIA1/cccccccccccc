@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SillyTavern 프롬프트 프리셋 뷰어</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-tertiary: #252538;
+            --accent-primary: hsl(280, 70%, 60%);
+            --accent-secondary: hsl(200, 70%, 55%);
+            --text-primary: #e8e8f0;
+            --text-secondary: #a8a8b8;
+            --text-muted: #707080;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --success: hsl(140, 60%, 55%);
+            --warning: hsl(40, 90%, 60%);
+            --danger: hsl(0, 70%, 60%);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .file-upload {
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            animation: fadeIn 0.6s ease 0.2s both;
+        }
+
+        .file-upload:hover {
+            border-color: var(--accent-primary);
+            background: var(--bg-tertiary);
+            transform: translateY(-2px);
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        .upload-label {
+            cursor: pointer;
+            display: block;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+
+        .section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            animation: fadeInUp 0.6s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 1.5rem;
+            background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+            border-radius: 2px;
+        }
+
+        .params-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .param-card {
+            background: var(--bg-tertiary);
+            padding: 1.25rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .param-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .param-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .param-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent-secondary);
+        }
+
+        .prompt-item {
+            background: var(--bg-tertiary);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--accent-primary);
+            transition: all 0.3s ease;
+            animation: slideInLeft 0.4s ease;
+        }
+
+        .prompt-item:hover {
+            transform: translateX(8px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .prompt-item.disabled {
+            opacity: 0.5;
+            border-left-color: var(--text-muted);
+        }
+
+        .prompt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .prompt-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .prompt-badges {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 0.35rem 0.85rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge.role-system {
+            background: linear-gradient(135deg, hsl(280, 60%, 50%), hsl(280, 60%, 40%));
+            color: white;
+        }
+
+        .badge.role-user {
+            background: linear-gradient(135deg, hsl(200, 60%, 50%), hsl(200, 60%, 40%));
+            color: white;
+        }
+
+        .badge.role-assistant {
+            background: linear-gradient(135deg, hsl(140, 60%, 50%), hsl(140, 60%, 40%));
+            color: white;
+        }
+
+        .badge.status-on {
+            background: var(--success);
+            color: white;
+        }
+
+        .badge.status-off {
+            background: var(--text-muted);
+            color: white;
+        }
+
+        .badge.marker {
+            background: var(--warning);
+            color: #000;
+        }
+
+        .prompt-content {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            white-space: pre-wrap;
+            word-break: break-word;
+            border: 1px solid var(--border-color);
+        }
+
+        .order-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-right: 0.75rem;
+        }
+
+        .character-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .tab-button:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 16px rgba(160, 80, 200, 0.4);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .info-item {
+            background: var(--bg-secondary);
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+
+        .info-value {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .filter-btn:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 2px 8px rgba(160, 80, 200, 0.3);
+        }
+
+        .details-arrow {
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
+
+        details[open] .details-arrow {
+            transform: rotate(90deg);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 800px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-lg);
+            animation: slideInUp 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: white;
+            box-shadow: 0 4px 12px rgba(160, 80, 200, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(160, 80, 200, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-2px);
+        }
+
+        .clickable-prompt {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .clickable-prompt:hover {
+            color: var(--accent-primary);
+            text-decoration: underline;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .params-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section {
+                padding: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🎭 SillyTavern 프리셋 뷰어</h1>
+            <p class="subtitle">프롬프트 프리셋 파일을 시각적으로 분석합니다</p>
+        </header>
+
+        <div class="file-upload" id="fileUpload">
+            <label for="fileInput" class="upload-label">
+                <div class="upload-icon">📁</div>
+                <div>
+                    <strong>JSON 파일을 선택하거나 드래그하세요</strong>
+                    <p style="color: var(--text-muted); margin-top: 0.5rem;">SillyTavern 프롬프트 프리셋 파일 (.json)</p>
+                </div>
+            </label>
+            <input type="file" id="fileInput" accept=".json">
+        </div>
+
+        <div id="content" style="display: none;">
+            <!-- Model Parameters Section -->
+            <div class="section">
+                <h2 class="section-title">⚙️ 모델 파라미터</h2>
+                <div class="params-grid" id="paramsGrid"></div>
+            </div>
+
+            <!-- Additional Settings Section -->
+            <div class="section">
+                <h2 class="section-title">🔧 추가 설정</h2>
+                <div class="info-grid" id="additionalSettings"></div>
+            </div>
+
+            <!-- Prompts Section -->
+            <details class="section">
+                <summary class="section-title" style="cursor: pointer; list-style: none;">
+                    <span style="display: flex; align-items: center; gap: 0.75rem;">
+                        <span class="details-arrow">▶</span>
+                        📝 프롬프트 전체 보기
+                    </span>
+                </summary>
+                <div id="promptsList" style="margin-top: 1rem;"></div>
+            </details>
+            <!-- Prompt Order Section -->
+            <div class="section">
+                <h2 class="section-title">📋 프롬프트 배치 순서</h2>
+                <div class="character-tabs" id="characterTabs"></div>
+                <div id="promptOrderContent"></div>
+            </div>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+            <div class="empty-state-icon">📄</div>
+            <p>파일을 업로드하여 시작하세요</p>
+        </div>
+
+        <!-- Modal for viewing prompt details -->
+        <div id="promptModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="modalPromptName"></h3>
+                    <button class="modal-close" onclick="closePromptModal()">×</button>
+                </div>
+                <div class="modal-body">
+                    <div id="modalPromptBadges" style="margin-bottom: 1rem;"></div>
+                    <div id="modalPromptContent" class="prompt-content" style="margin-bottom: 1rem;"></div>
+                    <div id="modalPromptInfo" class="info-grid"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closePromptModal()">닫기</button>
+                    <button class="btn btn-primary" onclick="copyPromptContent(event)">📋 내용 복사</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let presetData = null;
+        let currentCharacterId = null;
+
+        const fileInput = document.getElementById('fileInput');
+        const fileUpload = document.getElementById('fileUpload');
+        const content = document.getElementById('content');
+        const emptyState = document.getElementById('emptyState');
+
+        // File upload handlers
+        fileInput.addEventListener('change', handleFileSelect);
+
+        fileUpload.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUpload.style.borderColor = 'var(--accent-primary)';
+        });
+
+        fileUpload.addEventListener('dragleave', () => {
+            fileUpload.style.borderColor = 'var(--border-color)';
+        });
+
+        fileUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUpload.style.borderColor = 'var(--border-color)';
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        function handleFile(file) {
+            if (!file.name.endsWith('.json')) {
+                alert('JSON 파일만 업로드할 수 있습니다.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    presetData = JSON.parse(e.target.result);
+                    renderPreset();
+                } catch (error) {
+                    alert('JSON 파일을 파싱하는 중 오류가 발생했습니다: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function renderPreset() {
+            emptyState.style.display = 'none';
+            content.style.display = 'block';
+
+            renderParameters();
+            renderAdditionalSettings();
+            renderPrompts();
+            renderPromptOrder();
+        }
+
+        function renderParameters() {
+            const paramsGrid = document.getElementById('paramsGrid');
+            paramsGrid.innerHTML = '';
+
+            const params = [
+                { label: '최대 콘텍스트', value: presetData.openai_max_context || 'N/A', key: 'openai_max_context' },
+                { label: '최대 응답 크기', value: presetData.openai_max_tokens || 'N/A', key: 'openai_max_tokens' },
+                { label: 'Temperature', value: presetData.temperature ?? 'N/A', key: 'temperature' },
+                { label: 'Top P', value: presetData.top_p ?? 'N/A', key: 'top_p' },
+                { label: 'Top K', value: presetData.top_k ?? 'N/A', key: 'top_k' },
+                { label: 'Top A', value: presetData.top_a ?? 'N/A', key: 'top_a' },
+                { label: 'Min P', value: presetData.min_p ?? 'N/A', key: 'min_p' },
+                { label: 'Frequency Penalty', value: presetData.frequency_penalty ?? 'N/A', key: 'frequency_penalty' },
+                { label: 'Presence Penalty', value: presetData.presence_penalty ?? 'N/A', key: 'presence_penalty' },
+                { label: 'Repetition Penalty', value: presetData.repetition_penalty ?? 'N/A', key: 'repetition_penalty' },
+                { label: 'Seed', value: presetData.seed ?? 'N/A', key: 'seed' },
+                { label: 'N (Completions)', value: presetData.n ?? 'N/A', key: 'n' },
+            ];
+
+            params.forEach(param => {
+                const card = document.createElement('div');
+                card.className = 'param-card';
+                card.innerHTML = `
+                    <div class="param-label">${param.label}</div>
+                    <div class="param-value">${param.value}</div>
+                `;
+                paramsGrid.appendChild(card);
+            });
+        }
+
+        function renderAdditionalSettings() {
+            const container = document.getElementById('additionalSettings');
+            container.innerHTML = '';
+
+            const settings = [
+                { label: 'Wrap in Quotes', value: presetData.wrap_in_quotes ? 'ON' : 'OFF' },
+                { label: 'Stream OpenAI', value: presetData.stream_openai ? 'ON' : 'OFF' },
+                { label: 'Max Context Unlocked', value: presetData.max_context_unlocked ? 'ON' : 'OFF' },
+                { label: 'Claude Use Sysprompt', value: presetData.claude_use_sysprompt ? 'ON' : 'OFF' },
+                { label: 'Use Makersuite Sysprompt', value: presetData.use_makersuite_sysprompt ? 'ON' : 'OFF' },
+                { label: 'Squash System Messages', value: presetData.squash_system_messages ? 'ON' : 'OFF' },
+                { label: 'Image Inlining', value: presetData.image_inlining ? 'ON' : 'OFF' },
+                { label: 'Video Inlining', value: presetData.video_inlining ? 'ON' : 'OFF' },
+                { label: 'Function Calling', value: presetData.function_calling ? 'ON' : 'OFF' },
+                { label: 'Show Thoughts', value: presetData.show_thoughts ? 'ON' : 'OFF' },
+                { label: 'Enable Web Search', value: presetData.enable_web_search ? 'ON' : 'OFF' },
+                { label: 'Request Images', value: presetData.request_images ? 'ON' : 'OFF' },
+                { label: 'Names Behavior', value: presetData.names_behavior ?? 'N/A' },
+                { label: 'Bias Preset', value: presetData.bias_preset_selected || 'N/A' },
+                { label: 'Reasoning Effort', value: presetData.reasoning_effort || 'N/A' },
+                { label: 'Image Quality', value: presetData.inline_image_quality || 'N/A' },
+            ];
+
+            settings.forEach(setting => {
+                const item = document.createElement('div');
+                item.className = 'info-item';
+                item.innerHTML = `
+                    <div class="info-label">${setting.label}</div>
+                    <div class="info-value">${setting.value}</div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function renderPrompts() {
+            const promptsList = document.getElementById('promptsList');
+            promptsList.innerHTML = '';
+
+            if (!presetData.prompts || presetData.prompts.length === 0) {
+                promptsList.innerHTML = '<p style="color: var(--text-muted);">프롬프트가 정의되지 않았습니다.</p>';
+                return;
+            }
+
+            presetData.prompts.forEach((prompt, index) => {
+                const item = document.createElement('div');
+                item.className = 'prompt-item';
+
+                const isEnabled = prompt.enabled !== false;
+                const isMarker = prompt.marker === true;
+                const role = prompt.role || 'marker';
+
+                if (!isEnabled) {
+                    item.classList.add('disabled');
+                }
+
+                let badges = '';
+
+                if (isMarker) {
+                    badges += '<span class="badge marker">마커</span>';
+                } else {
+                    if (role === 'system') {
+                        badges += '<span class="badge role-system">시스템</span>';
+                    } else if (role === 'user') {
+                        badges += '<span class="badge role-user">사용자</span>';
+                    } else if (role === 'assistant') {
+                        badges += '<span class="badge role-assistant">AI 어시스턴트</span>';
+                    }
+                }
+
+                badges += isEnabled
+                    ? '<span class="badge status-on">ON</span>'
+                    : '<span class="badge status-off">OFF</span>';
+
+                let contentHtml = '';
+                if (prompt.content && !isMarker) {
+                    contentHtml = `<div class="prompt-content">${escapeHtml(prompt.content)}</div>`;
+                }
+
+                let additionalInfo = '';
+                if (prompt.identifier) {
+                    additionalInfo += `<div class="info-item"><div class="info-label">Identifier</div><div class="info-value">${prompt.identifier}</div></div>`;
+                }
+                if (prompt.injection_position !== undefined) {
+                    additionalInfo += `<div class="info-item"><div class="info-label">Injection Position</div><div class="info-value">${prompt.injection_position}</div></div>`;
+                }
+                if (prompt.injection_depth !== undefined) {
+                    additionalInfo += `<div class="info-item"><div class="info-label">Injection Depth</div><div class="info-value">${prompt.injection_depth}</div></div>`;
+                }
+                if (prompt.injection_order !== undefined) {
+                    additionalInfo += `<div class="info-item"><div class="info-label">Injection Order</div><div class="info-value">${prompt.injection_order}</div></div>`;
+                }
+
+                item.innerHTML = `
+                    <div class="prompt-header">
+                        <div class="prompt-name">${escapeHtml(prompt.name || 'Unnamed Prompt')}</div>
+                        <div class="prompt-badges">${badges}</div>
+                    </div>
+                    ${contentHtml}
+                    ${additionalInfo ? `<div class="info-grid" style="margin-top: 1rem;">${additionalInfo}</div>` : ''}
+                `;
+
+                promptsList.appendChild(item);
+            });
+        }
+
+        function renderPromptOrder() {
+            const tabsContainer = document.getElementById('characterTabs');
+            const contentContainer = document.getElementById('promptOrderContent');
+
+            tabsContainer.innerHTML = '';
+            contentContainer.innerHTML = '';
+
+            if (!presetData.prompt_order || presetData.prompt_order.length === 0) {
+                contentContainer.innerHTML = '<p style="color: var(--text-muted);">프롬프트 순서가 정의되지 않았습니다.</p>';
+                return;
+            }
+
+            presetData.prompt_order.forEach((config, index) => {
+                const characterId = config.character_id;
+                const tabButton = document.createElement('button');
+                tabButton.className = 'tab-button';
+
+                // Calculate statistics
+                const totalCount = config.order ? config.order.length : 0;
+                const enabledCount = config.order ? config.order.filter(o => o.enabled !== false).length : 0;
+                const disabledCount = totalCount - enabledCount;
+
+                tabButton.innerHTML = `
+                    Character ID: ${characterId}
+                    <div style="font-size: 0.75rem; opacity: 0.8; margin-top: 0.25rem;">
+                        ${totalCount}개 (ON: ${enabledCount}, OFF: ${disabledCount})
+                    </div>
+                `;
+                tabButton.onclick = () => switchTab(characterId);
+
+                if (index === 0) {
+                    tabButton.classList.add('active');
+                    currentCharacterId = characterId;
+                }
+
+                tabsContainer.appendChild(tabButton);
+
+                const tabContent = document.createElement('div');
+                tabContent.className = 'tab-content';
+                tabContent.id = `tab-${characterId}`;
+
+                if (index === 0) {
+                    tabContent.classList.add('active');
+                }
+
+                if (!config.order || config.order.length === 0) {
+                    tabContent.innerHTML = '<p style="color: var(--text-muted);">이 캐릭터에 대한 프롬프트 순서가 없습니다.</p>';
+                } else {
+                    // Add filter controls
+                    const filterControls = document.createElement('div');
+                    filterControls.className = 'filter-controls';
+                    filterControls.innerHTML = `
+                        <div style="display: flex; gap: 0.5rem; margin-bottom: 1.5rem; align-items: center;">
+                            <span style="color: var(--text-secondary); font-weight: 600;">필터:</span>
+                            <button class="filter-btn active" data-filter="all" data-char="${characterId}">전체 (${totalCount})</button>
+                            <button class="filter-btn" data-filter="enabled" data-char="${characterId}">ON만 (${enabledCount})</button>
+                            <button class="filter-btn" data-filter="disabled" data-char="${characterId}">OFF만 (${disabledCount})</button>
+                        </div>
+                    `;
+                    tabContent.appendChild(filterControls);
+
+                    // Add prompt list container
+                    const promptListContainer = document.createElement('div');
+                    promptListContainer.className = 'prompt-list-container';
+                    promptListContainer.id = `prompt-list-${characterId}`;
+
+                    config.order.forEach((orderItem, orderIndex) => {
+                        const prompt = findPromptByIdentifier(orderItem.identifier);
+                        const isEnabled = orderItem.enabled !== false;
+
+                        const orderDiv = document.createElement('div');
+                        orderDiv.className = 'prompt-item';
+                        orderDiv.setAttribute('data-enabled', isEnabled ? 'true' : 'false');
+
+                        if (!isEnabled) {
+                            orderDiv.classList.add('disabled');
+                        }
+
+                        const promptName = prompt ? prompt.name : orderItem.identifier;
+                        const role = prompt ? (prompt.role || 'marker') : 'unknown';
+                        const isMarker = prompt ? (prompt.marker === true) : false;
+
+                        let badges = '';
+
+                        if (isMarker) {
+                            badges += '<span class="badge marker">마커</span>';
+                        } else {
+                            if (role === 'system') {
+                                badges += '<span class="badge role-system">시스템</span>';
+                            } else if (role === 'user') {
+                                badges += '<span class="badge role-user">사용자</span>';
+                            } else if (role === 'assistant') {
+                                badges += '<span class="badge role-assistant">AI 어시스턴트</span>';
+                            }
+                        }
+
+                        badges += isEnabled
+                            ? '<span class="badge status-on">ON</span>'
+                            : '<span class="badge status-off">OFF</span>';
+
+                        orderDiv.innerHTML = `
+                            <div class="prompt-header">
+                                <div style="display: flex; align-items: center;">
+                                    <span class="order-number">${orderIndex + 1}</span>
+                                    <span class="prompt-name clickable-prompt" onclick="showPromptModal('${escapeHtml(orderItem.identifier)}')">${escapeHtml(promptName)}</span>
+                                </div>
+                                <div class="prompt-badges">${badges}</div>
+                            </div>
+                        `;
+
+                        promptListContainer.appendChild(orderDiv);
+                    });
+
+                    tabContent.appendChild(promptListContainer);
+                }
+
+                contentContainer.appendChild(tabContent);
+            });
+
+            // Add filter event listeners
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', handleFilterClick);
+            });
+        }
+
+        function handleFilterClick(e) {
+            const filter = e.target.getAttribute('data-filter');
+            const charId = e.target.getAttribute('data-char');
+
+            // Update active button
+            const parentControls = e.target.parentElement;
+            parentControls.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            e.target.classList.add('active');
+
+            // Filter prompts
+            const promptList = document.getElementById(`prompt-list-${charId}`);
+            const prompts = promptList.querySelectorAll('.prompt-item');
+
+            prompts.forEach(prompt => {
+                const isEnabled = prompt.getAttribute('data-enabled') === 'true';
+
+                if (filter === 'all') {
+                    prompt.style.display = 'block';
+                } else if (filter === 'enabled') {
+                    prompt.style.display = isEnabled ? 'block' : 'none';
+                } else if (filter === 'disabled') {
+                    prompt.style.display = !isEnabled ? 'block' : 'none';
+                }
+            });
+        }
+
+        function switchTab(characterId) {
+            currentCharacterId = characterId;
+
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            event.target.classList.add('active');
+
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            document.getElementById(`tab-${characterId}`).classList.add('active');
+        }
+
+        function findPromptByIdentifier(identifier) {
+            if (!presetData.prompts) return null;
+            return presetData.prompts.find(p => p.identifier === identifier);
+        }
+
+
+        let currentPromptContent = '';
+
+        function showPromptModal(identifier) {
+            const prompt = findPromptByIdentifier(identifier);
+            if (!prompt) {
+                alert('프롬프트를 찾을 수 없습니다.');
+                return;
+            }
+
+            const modal = document.getElementById('promptModal');
+            const modalName = document.getElementById('modalPromptName');
+            const modalBadges = document.getElementById('modalPromptBadges');
+            const modalContent = document.getElementById('modalPromptContent');
+            const modalInfo = document.getElementById('modalPromptInfo');
+
+            // Set prompt name
+            modalName.textContent = prompt.name || 'Unnamed Prompt';
+
+            // Set badges
+            const isMarker = prompt.marker === true;
+            const role = prompt.role || 'marker';
+            let badges = '';
+
+            if (isMarker) {
+                badges += '<span class="badge marker">마커</span>';
+            } else {
+                if (role === 'system') {
+                    badges += '<span class="badge role-system">시스템</span>';
+                } else if (role === 'user') {
+                    badges += '<span class="badge role-user">사용자</span>';
+                } else if (role === 'assistant') {
+                    badges += '<span class="badge role-assistant">AI 어시스턴트</span>';
+                }
+            }
+
+            modalBadges.innerHTML = '<div class="prompt-badges">' + badges + '</div>';
+
+            // Set content
+            if (prompt.content && !isMarker) {
+                modalContent.textContent = prompt.content;
+                modalContent.style.display = 'block';
+                currentPromptContent = prompt.content;
+            } else {
+                modalContent.textContent = '(내용 없음)';
+                modalContent.style.display = 'block';
+                currentPromptContent = '';
+            }
+
+            // Set additional info
+            let additionalInfo = '';
+            if (prompt.identifier) {
+                additionalInfo += `<div class="info-item"><div class="info-label">Identifier</div><div class="info-value">${escapeHtml(prompt.identifier)}</div></div>`;
+            }
+            if (prompt.injection_position !== undefined) {
+                additionalInfo += `<div class="info-item"><div class="info-label">Injection Position</div><div class="info-value">${prompt.injection_position}</div></div>`;
+            }
+            if (prompt.injection_depth !== undefined) {
+                additionalInfo += `<div class="info-item"><div class="info-label">Injection Depth</div><div class="info-value">${prompt.injection_depth}</div></div>`;
+            }
+            if (prompt.injection_order !== undefined) {
+                additionalInfo += `<div class="info-item"><div class="info-label">Injection Order</div><div class="info-value">${prompt.injection_order}</div></div>`;
+            }
+
+            modalInfo.innerHTML = additionalInfo;
+
+            // Show modal
+            modal.classList.add('show');
+
+            // Close on background click
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    closePromptModal();
+                }
+            };
+        }
+
+        function closePromptModal() {
+            const modal = document.getElementById('promptModal');
+            modal.classList.remove('show');
+            currentPromptContent = '';
+        }
+
+        function copyPromptContent(event) {
+            if (!currentPromptContent) {
+                alert('복사할 내용이 없습니다.');
+                return;
+            }
+
+            navigator.clipboard.writeText(currentPromptContent).then(() => {
+                // Show success feedback
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ 복사됨!';
+                btn.disabled = true;
+
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 2000);
+            }).catch(err => {
+                alert('복사 실패: ' + err);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Auto-load ex.json if available (for demo purposes)
+        // You can remove this section if you don't want auto-loading
+        window.addEventListener('load', () => {
+            // This will attempt to load ex.json from the same directory
+            fetch('ex.json')
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('File not found');
+                })
+                .then(data => {
+                    presetData = data;
+                    renderPreset();
+                })
+                .catch(() => {
+                    // Silently fail - user can upload manually
+                });
+        });
+    </script>
+</body>
+
+</html>
