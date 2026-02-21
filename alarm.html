@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MP3 반복 알림 카운터</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #0b63f6;
+      --danger: #d92d20;
+      --border: #d1d5db;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+      background: radial-gradient(circle at 20% 20%, #eaf1ff, var(--bg));
+      color: var(--text);
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .card {
+      width: min(640px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.07);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 1.35rem;
+    }
+
+    p.desc {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .row {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .row.inline {
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .row.inline label {
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    input[type="number"],
+    input[type="file"] {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 1rem;
+      background: #fff;
+    }
+
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px 16px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button#startBtn {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    button#stopBtn {
+      background: var(--danger);
+      color: #fff;
+    }
+
+    .status {
+      margin-top: 14px;
+      border-top: 1px dashed var(--border);
+      padding-top: 14px;
+      color: var(--muted);
+      min-height: 2em;
+      line-height: 1.5;
+    }
+
+    .status strong {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>MP3 반복 알림 카운터</h1>
+    <p class="desc">업로드한 MP3를 기준으로 x초 대기 후 재생하고, 필요 시 y초 후 리셋해서 반복합니다.</p>
+
+    <div class="row">
+      <label for="mp3File"><strong>1) MP3 파일 업로드</strong></label>
+      <input id="mp3File" type="file" accept="audio/mpeg,.mp3" />
+    </div>
+
+    <div class="row inline">
+      <label for="xSeconds"><strong>2) 알림 대기</strong></label>
+      <input id="xSeconds" type="number" min="1" step="1" value="10" />
+      <label for="xSeconds">초 후에 알림(재생)</label>
+    </div>
+
+    <div class="row inline">
+      <label class="checkbox" for="repeatEnabled">
+        <input id="repeatEnabled" type="checkbox" checked />
+        <span><strong>3) 반복 사용</strong></span>
+      </label>
+      <input id="ySeconds" type="number" min="1" step="1" value="5" />
+      <label for="ySeconds">초 후에 리셋 후 다시 카운트</label>
+    </div>
+
+    <div class="buttons">
+      <button id="startBtn" type="button">카운트 시작</button>
+      <button id="stopBtn" type="button">중지</button>
+    </div>
+
+    <div id="status" class="status">대기 중</div>
+  </main>
+
+  <script>
+    const mp3File = document.getElementById("mp3File");
+    const xSeconds = document.getElementById("xSeconds");
+    const ySeconds = document.getElementById("ySeconds");
+    const repeatEnabled = document.getElementById("repeatEnabled");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const statusEl = document.getElementById("status");
+
+    let audio = null;
+    let objectUrl = "";
+    let running = false;
+    let timerId = null;
+
+    function setStatus(text) {
+      statusEl.innerHTML = `<strong>상태:</strong> ${text}`;
+    }
+
+    function clearTimer() {
+      if (timerId !== null) {
+        clearTimeout(timerId);
+        timerId = null;
+      }
+    }
+
+    function stopAudio() {
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
+    }
+
+    function stopAll(manual = false) {
+      running = false;
+      clearTimer();
+      stopAudio();
+      if (manual) setStatus("중지됨");
+    }
+
+    function validateInputs() {
+      if (!audio) {
+        alert("먼저 MP3 파일을 업로드하세요.");
+        return false;
+      }
+
+      const x = Number(xSeconds.value);
+      if (!Number.isFinite(x) || x <= 0) {
+        alert("x초는 1 이상 숫자로 입력하세요.");
+        return false;
+      }
+
+      if (repeatEnabled.checked) {
+        const y = Number(ySeconds.value);
+        if (!Number.isFinite(y) || y <= 0) {
+          alert("반복을 사용할 때 y초는 1 이상 숫자로 입력하세요.");
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    function scheduleAlarmCycle() {
+      if (!running) return;
+
+      const x = Number(xSeconds.value);
+      setStatus(`${x}초 카운트 중...`);
+
+      timerId = setTimeout(() => {
+        if (!running) return;
+
+        audio.currentTime = 0;
+        audio.play().catch(() => {
+          setStatus("재생 실패: 브라우저 정책으로 차단되었을 수 있습니다.");
+        });
+        setStatus("알림 재생 중");
+
+        if (!repeatEnabled.checked) {
+          running = false;
+          setStatus("1회 재생 완료 (반복 꺼짐)");
+          return;
+        }
+
+        const y = Number(ySeconds.value);
+        timerId = setTimeout(() => {
+          if (!running) return;
+          stopAudio();
+          setStatus(`${y}초 경과: 리셋 후 다시 시작`);
+          scheduleAlarmCycle();
+        }, y * 1000);
+      }, x * 1000);
+    }
+
+    mp3File.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      objectUrl = URL.createObjectURL(file);
+      audio = new Audio(objectUrl);
+      audio.loop = true;
+      setStatus(`파일 선택됨: ${file.name}`);
+    });
+
+    startBtn.addEventListener("click", () => {
+      if (!validateInputs()) return;
+      stopAll(false);
+      running = true;
+      scheduleAlarmCycle();
+    });
+
+    stopBtn.addEventListener("click", () => {
+      stopAll(true);
+    });
+
+    window.addEventListener("beforeunload", () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    });
+  </script>
+</body>
+</html>
