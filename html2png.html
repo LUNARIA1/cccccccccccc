@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HTML to PNG Converter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        :root {
+            --bg: #0c0c14;
+            --bg2: #151520;
+            --bg3: #1a1a28;
+            --surface: #2a2a3d;
+            --text: #e2e4f0;
+            --sub: #9498b3;
+            --dim: #555770;
+            --blue: #7aa2f7;
+            --green: #9ece6a;
+            --red: #f7768e;
+            --mauve: #bb9af7;
+            --radius: 14px
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 48px 20px
+        }
+
+        h1 {
+            font-size: 30px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, var(--blue), var(--mauve));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent
+        }
+
+        .sub {
+            color: var(--sub);
+            font-size: 13px;
+            margin-bottom: 8px
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            background: rgba(158, 206, 106, .12);
+            border: 1px solid rgba(158, 206, 106, .25);
+            border-radius: 20px;
+            font-size: 11px;
+            color: var(--green);
+            font-weight: 600;
+            margin-bottom: 24px
+        }
+
+        .info {
+            width: 100%;
+            max-width: 600px;
+            background: var(--bg3);
+            border: 1px solid var(--surface);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            margin-bottom: 24px;
+            font-size: 12px
+        }
+
+        .info summary {
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--sub);
+            list-style: none
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 6px 16px;
+            margin-top: 12px;
+            color: var(--sub)
+        }
+
+        .info-grid .val {
+            text-align: right;
+            color: var(--text);
+            font-weight: 500;
+            font-family: monospace
+        }
+
+        .info-warn {
+            margin-top: 12px;
+            padding: 10px 12px;
+            background: rgba(247, 118, 142, .08);
+            border: 1px solid rgba(247, 118, 142, .2);
+            border-radius: 8px;
+            color: var(--sub);
+            line-height: 1.6
+        }
+
+        .info-warn b {
+            color: var(--red);
+            font-weight: 600
+        }
+
+        .drop {
+            width: 100%;
+            max-width: 600px;
+            border: 2px dashed var(--surface);
+            border-radius: var(--radius);
+            padding: 48px 32px;
+            text-align: center;
+            cursor: pointer;
+            background: var(--bg3);
+            position: relative;
+            transition: .3s
+        }
+
+        .drop:hover {
+            border-color: var(--blue);
+            background: rgba(122, 162, 247, .06)
+        }
+
+        .drop .ic {
+            font-size: 48px;
+            margin-bottom: 14px
+        }
+
+        .drop .lb {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 6px
+        }
+
+        .drop .ht {
+            font-size: 12px;
+            color: var(--dim)
+        }
+
+        .drop input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%
+        }
+
+        .fi {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 14px;
+            padding: 14px 18px;
+            background: var(--bg3);
+            border: 1px solid var(--surface);
+            border-radius: 10px;
+            display: none;
+            align-items: center;
+            gap: 12px
+        }
+
+        .fi.show {
+            display: flex
+        }
+
+        .fi .fn {
+            font-size: 14px;
+            font-weight: 500;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .fi .fs {
+            font-size: 12px;
+            color: var(--dim)
+        }
+
+        .fi .fr {
+            background: none;
+            border: none;
+            color: var(--dim);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px
+        }
+
+        .fi .fr:hover {
+            color: var(--red)
+        }
+
+        .st {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 16px;
+            display: none;
+            gap: 10px;
+            flex-direction: column
+        }
+
+        .st.show {
+            display: flex
+        }
+
+        .sr {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg3);
+            border-radius: 10px;
+            border: 1px solid var(--surface)
+        }
+
+        .sr label {
+            font-size: 13px;
+            color: var(--sub);
+            min-width: 80px
+        }
+
+        .sr select {
+            background: var(--bg2);
+            border: 1px solid var(--surface);
+            color: var(--text);
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit
+        }
+
+        .cb {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 16px;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            display: none;
+            background: linear-gradient(135deg, var(--blue), var(--mauve));
+            color: #fff;
+            transition: .3s
+        }
+
+        .cb.show {
+            display: block
+        }
+
+        .cb:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(122, 162, 247, .3)
+        }
+
+        .cb:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none
+        }
+
+        .pa {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            display: none
+        }
+
+        .pa.show {
+            display: block
+        }
+
+        .pbo {
+            width: 100%;
+            height: 6px;
+            background: var(--surface);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 10px
+        }
+
+        .pbi {
+            height: 100%;
+            background: linear-gradient(90deg, var(--blue), var(--mauve));
+            border-radius: 3px;
+            transition: width .4s;
+            width: 0
+        }
+
+        .pl {
+            font-size: 12px;
+            color: var(--sub);
+            text-align: center
+        }
+
+        .rs {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            display: none;
+            text-align: center;
+            padding: 24px;
+            background: var(--bg3);
+            border-radius: var(--radius);
+            border: 1px solid var(--surface)
+        }
+
+        .rs.show {
+            display: block
+        }
+
+        .rs.ok {
+            border-color: var(--green);
+            background: rgba(158, 206, 106, .08)
+        }
+
+        .rs.er {
+            border-color: var(--red);
+            background: rgba(247, 118, 142, .08)
+        }
+
+        .rs .ri {
+            font-size: 40px;
+            margin-bottom: 8px
+        }
+
+        .rs .rt {
+            font-size: 15px;
+            font-weight: 600
+        }
+
+        .rs .rd {
+            font-size: 12px;
+            color: var(--sub);
+            margin-top: 6px;
+            white-space: pre-line;
+            line-height: 1.5
+        }
+
+        .ft {
+            margin-top: 48px;
+            font-size: 11px;
+            color: var(--dim);
+            text-align: center;
+            line-height: 1.8
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>HTML to PNG</h1>
+    <p class="sub">SVG foreignObject - No Server Required</p>
+    <div class="badge">Chromium-grade CSS rendering</div>
+
+    <details class="info" open>
+        <summary>Size Limits</summary>
+        <div class="info-grid">
+            <span>Browser</span><span class="val" id="infoBrowser">-</span>
+            <span>Max Canvas</span><span class="val" id="infoMaxDim">detecting...</span>
+            <span>Max Height @700px</span><span class="val" id="infoMaxH">-</span>
+            <span>Auto-split at</span><span class="val" id="infoChunk">-</span>
+        </div>
+        <div class="info-warn">
+            <b>Note:</b> External fonts (Google Fonts) will be auto-inlined (requires internet).
+            If inlining fails, system fonts are used instead. Stable up to ~15,000px height.
+        </div>
+    </details>
+
+    <div class="drop" id="dz">
+        <div class="ic">📂</div>
+        <div class="lb">Drop HTML file here or click to select</div>
+        <div class="ht">chat_*.html files supported</div>
+        <input type="file" id="fin" accept=".html,.htm">
+    </div>
+
+    <div class="fi" id="fi">
+        <span>📄</span>
+        <span class="fn" id="fn"></span>
+        <span class="fs" id="fz"></span>
+        <button class="fr" id="frm">✕</button>
+    </div>
+
+    <div class="st" id="st">
+        <div class="sr">
+            <label>Width</label>
+            <select id="ws">
+                <option value="500">500px</option>
+                <option value="600">600px</option>
+                <option value="700" selected>700px</option>
+                <option value="800">800px</option>
+                <option value="1024">1024px</option>
+            </select>
+        </div>
+    </div>
+
+    <button class="cb" id="cv" disabled>Convert to PNG</button>
+
+    <div class="pa" id="pa">
+        <div class="pbo">
+            <div class="pbi" id="pb"></div>
+        </div>
+        <div class="pl" id="plg">Ready...</div>
+    </div>
+
+    <div class="rs" id="rs">
+        <div class="ri" id="ri"></div>
+        <div class="rt" id="rt"></div>
+        <div class="rd" id="rd"></div>
+    </div>
+
+    <div class="ft">HTML to PNG v4.1 - SVG foreignObject + Font Inlining</div>
+
+    <script>
+        /* === Helpers === */
+        function gel(id) { return document.getElementById(id); }
+        var curFile = null;
+        var htmlContent = '';
+        var CANVAS_MAX = 16384;
+        var CHUNK_HEIGHT = 12000;
+
+        /* === Canvas Limit Detection === */
+        function detectCanvasMax() {
+            var sizes = [32767, 16384, 11180, 8192, 4096];
+            for (var si = 0; si < sizes.length; si++) {
+                var s = sizes[si];
+                try {
+                    var c = document.createElement('canvas');
+                    c.width = 1;
+                    c.height = s;
+                    var ctx = c.getContext('2d');
+                    if (!ctx) continue;
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(0, s - 1, 1, 1);
+                    var d = ctx.getImageData(0, s - 1, 1, 1).data;
+                    if (d[0] === 255) { CANVAS_MAX = s; break; }
+                } catch (e) { /* skip */ }
+            }
+            CHUNK_HEIGHT = Math.min(12000, CANVAS_MAX - 100);
+            var ua = navigator.userAgent;
+            var b = 'Unknown';
+            if (ua.indexOf('Edg') > -1) b = 'Edge';
+            else if (ua.indexOf('Chrome') > -1) b = 'Chrome';
+            else if (ua.indexOf('Firefox') > -1) b = 'Firefox';
+            else if (ua.indexOf('Safari') > -1) b = 'Safari';
+            gel('infoBrowser').textContent = b;
+            gel('infoMaxDim').textContent = CANVAS_MAX + ' x ' + CANVAS_MAX + ' px';
+            gel('infoMaxH').textContent = '~' + CANVAS_MAX + ' px';
+            gel('infoChunk').textContent = CHUNK_HEIGHT + ' px';
+        }
+        detectCanvasMax();
+
+        /* === File Handling === */
+        function handleFile(f) {
+            if (!f) return;
+            var ext = f.name.toLowerCase();
+            if (ext.indexOf('.html') === -1 && ext.indexOf('.htm') === -1) {
+                showRes('er', 'X', 'HTML files only', '');
+                return;
+            }
+            curFile = f;
+            gel('fn').textContent = f.name;
+            var kb = (f.size / 1024).toFixed(1);
+            gel('fz').textContent = kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : kb + ' KB';
+            gel('fi').classList.add('show');
+            gel('st').classList.add('show');
+            gel('cv').classList.add('show');
+            gel('cv').disabled = false;
+            gel('dz').style.display = 'none';
+            gel('rs').classList.remove('show');
+            var reader = new FileReader();
+            reader.onload = function (e) { htmlContent = e.target.result; };
+            reader.readAsText(f);
+        }
+
+        function removeFile() {
+            curFile = null;
+            htmlContent = '';
+            var ids = ['fi', 'st', 'cv', 'rs', 'pa'];
+            for (var i = 0; i < ids.length; i++) gel(ids[i]).classList.remove('show');
+            gel('dz').style.display = '';
+            gel('fin').value = '';
+        }
+
+        gel('dz').addEventListener('dragover', function (e) { e.preventDefault(); });
+        gel('dz').addEventListener('drop', function (e) {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        gel('fin').addEventListener('change', function (e) {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+        gel('frm').addEventListener('click', removeFile);
+
+        function showRes(t, i, tx, d) {
+            gel('rs').className = 'rs show ' + t;
+            gel('ri').textContent = i;
+            gel('rt').textContent = tx;
+            gel('rd').textContent = d || '';
+        }
+
+        function prog(p, m) {
+            gel('pb').style.width = p + '%';
+            gel('plg').textContent = m;
+        }
+
+        /* === Font Inlining === */
+        function inlineFontUrl(url) {
+            return fetch(url, { mode: 'cors' }).then(function (resp) {
+                if (!resp.ok) return null;
+                return resp.arrayBuffer();
+            }).then(function (buf) {
+                if (!buf) return null;
+                var bytes = new Uint8Array(buf);
+                var binary = '';
+                for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+                var b64 = btoa(binary);
+                var mime = url.indexOf('.woff2') > -1 ? 'font/woff2' : 'font/woff';
+                return 'data:' + mime + ';base64,' + b64;
+            }).catch(function () { return null; });
+        }
+
+        function inlineAllFontsInCSS(cssText) {
+            var urlRegex = /url\(\s*['"]?(https?:\/\/[^)'"]+)['"]?\s*\)/gi;
+            var match;
+            var urls = [];
+            while ((match = urlRegex.exec(cssText)) !== null) {
+                urls.push(match[1]);
+            }
+            if (urls.length === 0) return Promise.resolve(cssText);
+
+            var unique = [];
+            var seen = {};
+            for (var i = 0; i < urls.length; i++) {
+                if (!seen[urls[i]]) { unique.push(urls[i]); seen[urls[i]] = true; }
+            }
+
+            var promises = unique.map(function (u) { return inlineFontUrl(u); });
+            return Promise.all(promises).then(function (results) {
+                var cache = {};
+                for (var i = 0; i < unique.length; i++) cache[unique[i]] = results[i];
+                return cssText.replace(/url\(\s*['"]?(https?:\/\/[^)'"]+)['"]?\s*\)/gi, function (full, url) {
+                    if (cache[url]) return 'url(' + cache[url] + ')';
+                    return 'url()';
+                });
+            });
+        }
+
+        /* === Strip remaining external URLs === */
+        function stripExternalUrls(css) {
+            return css.replace(/url\(\s*['"]?(https?:\/\/[^)'"]*?)['"]?\s*\)/gi, 'url()');
+        }
+
+        /* === Image Inlining === */
+        function inlineImages(doc) {
+            var inlined = 0, failed = 0;
+            var imgs = doc.querySelectorAll('img');
+            for (var i = 0; i < imgs.length; i++) {
+                var img = imgs[i];
+                if (!img.src || img.src.indexOf('data:') === 0) continue;
+                try {
+                    var c = document.createElement('canvas');
+                    c.width = img.naturalWidth || img.width || 100;
+                    c.height = img.naturalHeight || img.height || 100;
+                    c.getContext('2d').drawImage(img, 0, 0);
+                    img.setAttribute('src', c.toDataURL('image/png'));
+                    inlined++;
+                } catch (e) {
+                    img.removeAttribute('src');
+                    img.style.display = 'none';
+                    failed++;
+                }
+            }
+            return { inlined: inlined, failed: failed };
+        }
+
+        /* === Clean doc for SVG === */
+        function cleanDoc(doc) {
+            var remove = doc.querySelectorAll('script,template,noscript,link[rel="stylesheet"],link[rel="preconnect"],link[rel="preload"]');
+            for (var i = 0; i < remove.length; i++) remove[i].remove();
+            var metas = doc.querySelectorAll('meta:not([charset])');
+            for (var i = 0; i < metas.length; i++) metas[i].remove();
+        }
+
+        /* === SVG Build === */
+        function buildSVG(xhtml, w, fullH, yOff, chunkH) {
+            return '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + chunkH + '">' +
+                '<foreignObject x="0" y="' + (-yOff) + '" width="' + w + '" height="' + fullH + '">' +
+                xhtml +
+                '</foreignObject></svg>';
+        }
+
+        /* === SVG to Canvas === */
+        function svgToCanvas(svgStr, w, h) {
+            return new Promise(function (resolve, reject) {
+                var encoded = encodeURIComponent(svgStr);
+                var dataUrl = 'data:image/svg+xml;charset=utf-8,' + encoded;
+                var img = new Image();
+                img.onload = function () {
+                    try {
+                        var canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        var ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        try { canvas.toDataURL(); } catch (e) {
+                            reject(new Error('Canvas tainted - external resources remain'));
+                            return;
+                        }
+                        resolve(canvas);
+                    } catch (e) { reject(e); }
+                };
+                img.onerror = function () { reject(new Error('SVG render failed')); };
+                img.src = dataUrl;
+            });
+        }
+
+        /* === Download === */
+        function downloadCanvas(canvas, filename) {
+            var url = canvas.toDataURL('image/png');
+            var a = document.createElement('a');
+            a.download = filename;
+            a.href = url;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        /* === Main Convert === */
+        gel('cv').addEventListener('click', function () {
+            if (!htmlContent) return;
+            gel('cv').disabled = true;
+            gel('pa').classList.add('show');
+            gel('rs').classList.remove('show');
+
+            var renderW = parseInt(gel('ws').value);
+            var baseName = curFile ? curFile.name.replace(/\.html?$/i, '') : 'capture';
+
+            var old = document.getElementById('__rf');
+            if (old) old.remove();
+
+            prog(3, 'Creating iframe...');
+
+            var iframe = document.createElement('iframe');
+            iframe.id = '__rf';
+            iframe.style.cssText = 'position:fixed;left:-99999px;top:0;width:' + renderW + 'px;height:200px;border:none;opacity:0;pointer-events:none;';
+            document.body.appendChild(iframe);
+
+            var iDoc = iframe.contentDocument || iframe.contentWindow.document;
+            iDoc.open();
+            iDoc.write(htmlContent);
+            iDoc.close();
+
+            prog(6, 'Waiting for resources...');
+
+            var loadPromise = new Promise(function (r) {
+                iframe.onload = r;
+                setTimeout(r, 5000);
+            });
+
+            loadPromise.then(function () {
+                try { return iDoc.fonts.ready; } catch (e) { return Promise.resolve(); }
+            }).then(function () {
+                var imgEls = iDoc.querySelectorAll('img');
+                var imgPromises = [];
+                for (var i = 0; i < imgEls.length; i++) {
+                    if (!imgEls[i].complete) {
+                        imgPromises.push(new Promise(function (r) {
+                            imgEls[i].onload = r;
+                            imgEls[i].onerror = r;
+                        }));
+                    }
+                }
+                return Promise.all(imgPromises);
+            }).then(function () {
+                prog(10, 'Stabilizing render...');
+                return new Promise(function (r) { setTimeout(r, 2000); });
+            }).then(function () {
+                prog(15, 'Measuring content...');
+                var body = iDoc.body;
+                body.style.margin = '0';
+                body.style.overflow = 'visible';
+                void body.offsetHeight;
+                iframe.style.height = body.scrollHeight + 'px';
+                return new Promise(function (r) { setTimeout(r, 500); });
+            }).then(function () {
+                void iDoc.body.offsetHeight;
+                var fullH = Math.max(iDoc.body.scrollHeight, iDoc.body.offsetHeight);
+                if (fullH < 20) throw new Error('Content empty (height: ' + fullH + 'px)');
+                console.log('Content: ' + renderW + ' x ' + fullH + 'px');
+
+                prog(18, 'Inlining images...');
+                var imgResult = inlineImages(iDoc);
+                console.log('Images: ' + imgResult.inlined + ' inlined, ' + imgResult.failed + ' removed');
+
+                prog(20, 'Inlining fonts (may take time)...');
+                var styles = iDoc.querySelectorAll('style');
+                var fontPromise = Promise.resolve();
+                var totalFonts = 0;
+
+                for (var si = 0; si < styles.length; si++) {
+                    (function (styleEl, idx) {
+                        fontPromise = fontPromise.then(function () {
+                            var txt = styleEl.textContent;
+                            var extCount = (txt.match(/url\(\s*['"]?https?:\/\//gi) || []).length;
+                            if (extCount === 0) return;
+                            totalFonts += extCount;
+                            prog(20 + Math.round((idx / styles.length) * 30),
+                                'Inlining fonts ' + (idx + 1) + '/' + styles.length + ' (' + extCount + ' URLs)...');
+                            return inlineAllFontsInCSS(txt).then(function (result) {
+                                styleEl.textContent = result;
+                            });
+                        });
+                    })(styles[si], si);
+                }
+
+                return fontPromise.then(function () {
+                    console.log('Fonts: ' + totalFonts + ' URLs');
+                    prog(52, 'Cleaning external refs...');
+                    cleanDoc(iDoc);
+
+                    // Strip remaining external URLs from styles
+                    var allStyles = iDoc.querySelectorAll('style');
+                    for (var i = 0; i < allStyles.length; i++) {
+                        allStyles[i].textContent = stripExternalUrls(allStyles[i].textContent);
+                    }
+
+                    // Strip from inline styles
+                    var styled = iDoc.querySelectorAll('[style]');
+                    for (var i = 0; i < styled.length; i++) {
+                        if (styled[i].style.cssText.match(/url\(\s*['"]?https?:/i)) {
+                            styled[i].style.cssText = stripExternalUrls(styled[i].style.cssText);
+                        }
+                    }
+
+                    // Remove broken images
+                    var brokenImgs = iDoc.querySelectorAll('img:not([src])');
+                    for (var i = 0; i < brokenImgs.length; i++) brokenImgs[i].remove();
+
+                    prog(55, 'Serializing XHTML...');
+                    var xhtml = new XMLSerializer().serializeToString(iDoc.documentElement);
+                    console.log('XHTML: ' + (xhtml.length / 1024).toFixed(0) + ' KB');
+
+                    var maxChunk = CHUNK_HEIGHT;
+                    var parts = Math.ceil(fullH / maxChunk);
+                    var renderPromise = Promise.resolve();
+                    var results = [];
+
+                    for (var pi = 0; pi < parts; pi++) {
+                        (function (partIdx) {
+                            renderPromise = renderPromise.then(function () {
+                                var y = partIdx * maxChunk;
+                                var h = Math.min(maxChunk, fullH - y);
+                                prog(55 + Math.round((partIdx / parts) * 35),
+                                    'Rendering part ' + (partIdx + 1) + '/' + parts + '...');
+                                var svg = buildSVG(xhtml, renderW, fullH, y, h);
+                                return svgToCanvas(svg, renderW, h).then(function (canvas) {
+                                    var name = parts === 1 ? baseName + '.png' : baseName + '_part' + (partIdx + 1) + '.png';
+                                    results.push({ canvas: canvas, name: name });
+                                });
+                            });
+                        })(pi);
+                    }
+
+                    return renderPromise.then(function () {
+                        prog(95, 'Downloading PNG...');
+                        var info = [];
+                        for (var i = 0; i < results.length; i++) {
+                            downloadCanvas(results[i].canvas, results[i].name);
+                            info.push(results[i].name + ': ' + results[i].canvas.width + 'x' + results[i].canvas.height + 'px');
+                        }
+                        prog(100, 'Done!');
+                        var extra = '';
+                        if (totalFonts > 0) extra += totalFonts + ' font URLs inlined\n';
+                        if (imgResult.inlined > 0) extra += imgResult.inlined + ' images inlined\n';
+                        if (imgResult.failed > 0) extra += imgResult.failed + ' images removed (CORS)\n';
+                        showRes('ok', 'Done!',
+                            results.length === 1 ? 'PNG downloaded!' : parts + ' PNGs downloaded!',
+                            info.join('\n') + '\nWidth: ' + renderW + 'px\n' + extra);
+                        iframe.remove();
+                    });
+                });
+            }).catch(function (err) {
+                console.error('Error:', err);
+                showRes('er', 'Error', 'Conversion failed', err.message);
+                prog(100, 'Failed');
+                var f = document.getElementById('__rf');
+                if (f) f.remove();
+            }).then(function () {
+                gel('cv').disabled = false;
+            });
+        });
+
+        console.log('HTML2PNG v4.1 loaded OK');
+    </script>
+</body>
+
+</html>
