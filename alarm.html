@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
@@ -98,6 +98,11 @@
       cursor: pointer;
     }
 
+    button#startAllBtn {
+      background: #111827;
+      color: #fff;
+    }
+
     button#startBtn {
       background: var(--primary);
       color: #fff;
@@ -192,10 +197,10 @@
 <body>
   <main class="card">
     <h1>MP3 반복 알림 카운터</h1>
-    <p class="desc">업로드한 MP3를 기준으로 x초 대기 후 재생하고, 반복 사용 시 y초 뒤 다시 카운트합니다.</p>
+    <p class="desc">설정된 초를 기다렸다가 MP3를 재생하고, 반복 사용 시 지정한 초 후 다시 카운트합니다.</p>
 
     <div class="row">
-      <label for="mp3File"><strong>1) MP3 파일 업로드</strong></label>
+      <label for="mp3File"><strong>1) MP3 파일 업로드 (선택)</strong></label>
       <input id="mp3File" type="file" accept="audio/mpeg,.mp3" />
     </div>
 
@@ -215,6 +220,7 @@
     </div>
 
     <div class="buttons">
+      <button id="startAllBtn" type="button">전체 시작</button>
       <button id="startBtn" type="button">카운트 시작</button>
       <button id="stopBtn" type="button">중지</button>
     </div>
@@ -235,6 +241,7 @@
     const xSeconds = document.getElementById("xSeconds");
     const ySeconds = document.getElementById("ySeconds");
     const repeatEnabled = document.getElementById("repeatEnabled");
+    const startAllBtn = document.getElementById("startAllBtn");
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
     const statusEl = document.getElementById("status");
@@ -242,7 +249,9 @@
     const addSlotBtn = document.getElementById("addSlotBtn");
     const slotList = document.getElementById("slotList");
 
-    let audio = null;
+    let audio = new Audio("chicken.mp3");
+    audio.loop = true;
+
     let objectUrl = "";
     let running = false;
     let timerId = null;
@@ -275,11 +284,6 @@
     }
 
     function validateInputs() {
-      if (!audio) {
-        alert("먼저 MP3 파일을 업로드해주세요.");
-        return false;
-      }
-
       const x = Number(xSeconds.value);
       if (!Number.isFinite(x) || x <= 0) {
         alert("x초는 1 이상의 숫자로 입력해주세요.");
@@ -359,7 +363,55 @@
       if (status) status.textContent = text;
     }
 
-    function createSlot() {
+    function startMainCounter() {
+      if (!validateInputs()) return false;
+      stopAll(false);
+      running = true;
+      scheduleAlarmCycle();
+      return true;
+    }
+
+    function startSlotCounter(slotEl, state, showAlert = true) {
+      const minutesInput = slotEl.querySelector('[data-role="minutes"]');
+      if (!(minutesInput instanceof HTMLInputElement)) return false;
+
+      const minutes = Number(minutesInput.value);
+      if (!Number.isFinite(minutes) || minutes < 0) {
+        if (showAlert) alert("분은 0 이상의 숫자로 입력해주세요.");
+        return false;
+      }
+
+      if (!state.audio) {
+        if (showAlert) alert("먼저 해당 슬롯에 MP3 파일을 업로드해주세요.");
+        return false;
+      }
+
+      stopSlot(state);
+
+      const delayMs = Math.floor(minutes * 60 * 1000);
+      state.endAt = Date.now() + delayMs;
+      updateSlotStatus(slotEl, `카운트 시작: 남은 시간 ${formatRemain(delayMs / 1000)}`);
+
+      state.intervalId = setInterval(() => {
+        const remainSec = Math.ceil((state.endAt - Date.now()) / 1000);
+        updateSlotStatus(slotEl, `카운트 중... 남은 시간 ${formatRemain(remainSec)}`);
+      }, 250);
+
+      state.timeoutId = setTimeout(() => {
+        clearSlotTimers(state);
+        if (!state.audio) return;
+        state.audio.currentTime = 0;
+        state.audio.play().then(() => {
+          updateSlotStatus(slotEl, "재생 시작");
+        }).catch(() => {
+          updateSlotStatus(slotEl, "재생 실패: 브라우저 정책으로 차단되었을 수 있습니다.");
+        });
+      }, delayMs);
+
+      return true;
+    }
+
+    function createSlot(withDefaultAudio = false) {
       const id = slotSeq++;
       const slotEl = document.createElement("div");
       slotEl.className = "slot";
@@ -367,7 +419,7 @@
       slotEl.innerHTML = `
         <div><strong>슬롯 ${id}</strong></div>
         <div class="slot-top">
-          <input type="number" min="0" step="1" value="30" data-role="minutes" placeholder="몇 분 뒤" />
+          <input type="number" min="0" step="1" value="30" data-role="minutes" placeholder="몇 분 후" />
           <input type="file" accept="audio/mpeg,.mp3" data-role="file" />
         </div>
         <div class="slot-controls">
@@ -378,13 +430,21 @@
       `;
 
       slotList.appendChild(slotEl);
-      slotStates.set(id, {
+
+      const state = {
         timeoutId: null,
         intervalId: null,
         audio: null,
         url: "",
         endAt: 0
-      });
+      };
+      slotStates.set(id, state);
+
+      if (withDefaultAudio) {
+        state.audio = new Audio("fantasia.mp3");
+        state.audio.loop = false;
+        updateSlotStatus(slotEl, "기본 파일: fantasia.mp3");
+      }
     }
 
     mp3File.addEventListener("change", (e) => {
@@ -399,10 +459,19 @@
     });
 
     startBtn.addEventListener("click", () => {
-      if (!validateInputs()) return;
-      stopAll(false);
-      running = true;
-      scheduleAlarmCycle();
+      startMainCounter();
+    });
+
+    startAllBtn.addEventListener("click", () => {
+      startMainCounter();
+
+      const slots = slotList.querySelectorAll(".slot");
+      slots.forEach((slotEl) => {
+        const id = Number(slotEl.dataset.id);
+        const state = slotStates.get(id);
+        if (!state) return;
+        startSlotCounter(slotEl, state, false);
+      });
     });
 
     stopBtn.addEventListener("click", () => {
@@ -410,7 +479,7 @@
     });
 
     addSlotBtn.addEventListener("click", () => {
-      createSlot();
+      createSlot(false);
     });
 
     slotList.addEventListener("change", (e) => {
@@ -455,41 +524,7 @@
         return;
       }
 
-      const minutesInput = slotEl.querySelector('[data-role="minutes"]');
-      if (!(minutesInput instanceof HTMLInputElement)) return;
-
-      const minutes = Number(minutesInput.value);
-      if (!Number.isFinite(minutes) || minutes < 0) {
-        alert("분은 0 이상의 숫자로 입력해주세요.");
-        return;
-      }
-
-      if (!state.audio) {
-        alert("먼저 이 슬롯에 MP3 파일을 업로드해주세요.");
-        return;
-      }
-
-      stopSlot(state);
-
-      const delayMs = Math.floor(minutes * 60 * 1000);
-      state.endAt = Date.now() + delayMs;
-      updateSlotStatus(slotEl, `카운트 시작: 남은 시간 ${formatRemain(delayMs / 1000)}`);
-
-      state.intervalId = setInterval(() => {
-        const remainSec = Math.ceil((state.endAt - Date.now()) / 1000);
-        updateSlotStatus(slotEl, `카운트 중: 남은 시간 ${formatRemain(remainSec)}`);
-      }, 250);
-
-      state.timeoutId = setTimeout(() => {
-        clearSlotTimers(state);
-        if (!state.audio) return;
-        state.audio.currentTime = 0;
-        state.audio.play().then(() => {
-          updateSlotStatus(slotEl, "재생 시작됨");
-        }).catch(() => {
-          updateSlotStatus(slotEl, "재생 실패: 브라우저 정책으로 차단되었을 수 있습니다.");
-        });
-      }, delayMs);
+      startSlotCounter(slotEl, state, true);
     });
 
     window.addEventListener("beforeunload", () => {
@@ -503,7 +538,8 @@
       });
     });
 
-    createSlot();
+    setStatus("기본 파일: chicken.mp3");
+    createSlot(true);
   </script>
 </body>
 </html>
