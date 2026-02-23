@@ -410,22 +410,80 @@ Void: img, hr, br
 - \`{{getvar::name}}\` — 채팅 변수 읽기
 - \`{{setvar::name::value}}\` — 채팅 변수 쓰기
 
-## CSS 변수
-핵심 테마 색상:
-- \`--risu-theme-bgcolor\` — 메인 배경색
-- \`--risu-theme-darkbg\` — 더 어두운 배경 (사이드바, 패널)
-- \`--risu-theme-borderc\` — 테두리 색상
-- \`--risu-theme-selected\` — 선택/활성 아이템 배경
-- \`--risu-theme-textcolor\` — 주 텍스트 색상
-- \`--risu-theme-textcolor2\` — 보조 텍스트
-- \`--risu-theme-draculared\` — 강조/위험 색상
+## ⚡ 중요: risutextbox 내부 렌더링 구조
+\`<risutextbox>\`는 RisuAI에서 다음 DOM 구조로 치환됩니다:
+\`\`\`html
+<div class="chattext">
+    <p>일반 텍스트</p>
+    <p><strong>볼드</strong></p>
+    <p><em>이탤릭</em></p>
+    <p><mark risu-mark="quote1">"큰따옴표 대화문"</mark></p>
+    <p><mark risu-mark="quote2">'작은따옴표 대화문'</mark></p>
+    <blockquote>인용문</blockquote>
+</div>
+\`\`\`
+따라서 CSS에서 텍스트 스타일을 지정할 때 반드시 \`.chattext\`를 기준으로 선택자를 작성해야 합니다.
 
-텍스트/폰트 변수:
+## ⚠️ CSS 필수 규칙 (반드시 준수)
+1. **색상은 절대 var()만 사용하지 마세요.** RisuAI의 기본 테마 CSS가 덮어쓸 수 있습니다.
+   - ❌ \`color: var(--my-text);\`
+   - ✅ \`color: #504456;\`
+   - 또는 \`:root\`에서 변수를 선언하되, \`.chattext\` 내부 요소에는 반드시 직접 색상값을 사용하세요.
+
+2. **\`.chattext\` 내부 모든 요소에 명시적 color를 지정하세요:**
+   \`\`\`css
+   /* 필수: 기본 텍스트 색상 */
+   .your-bubble .chattext,
+   .your-bubble .chattext p,
+   .your-bubble .chattext span,
+   .your-bubble .chattext div {
+       color: #504456;    /* 직접 색상값 */
+   }
+   
+   /* 필수: 서식별 색상 */
+   .your-bubble .chattext strong {
+       color: #3C2E43;
+       font-weight: 700;
+   }
+   .your-bubble .chattext em {
+       color: #A396AD;
+       font-style: italic;
+   }
+   
+   /* 필수: 대화문 스타일 */
+   .your-bubble .chattext mark[risu-mark="quote1"] {
+       color: #5CA4BE;
+       background: rgba(92, 164, 190, 0.15);
+       border-radius: 4px;
+       padding: 1px 4px;
+   }
+   .your-bubble .chattext mark[risu-mark="quote2"] {
+       color: #A17DC2;
+       background: rgba(161, 125, 194, 0.15);
+       border-radius: 4px;
+       padding: 1px 4px;
+   }
+   
+   /* 필수: 인용문 */
+   .your-bubble .chattext blockquote {
+       border-left: 3px solid #86D2EE;
+       padding-left: 10px;
+       margin: 6px 0;
+       color: #A396AD;
+   }
+   \`\`\`
+
+3. **유저 버블과 캐릭터 버블의 텍스트 색상이 다를 수 있으므로 각각 지정하세요.**
+
+4. **\`--FontColorStandard\`, \`--FontColorBold\` 등의 변수는 \`:root\`에 선언하되, \`.chattext\` 선택자에서는 직접 색상을 쓰세요.** 이 변수들은 RisuAI 내부에서 참조하는 용도입니다.
+
+## CSS 변수 (RisuAI 내부 참조용으로 :root에 선언)
+텍스트/폰트 — 반드시 :root에 선언해야 RisuAI가 올바르게 인식합니다:
 - \`--FontColorStandard\` — 일반 텍스트
 - \`--FontColorBold\` — 볼드 텍스트
 - \`--FontColorItalic\` — 이탤릭 텍스트
-- \`--FontColorQuote1\` — 큰따옴표 스타일
-- \`--FontColorQuote2\` — 작은따옴표 스타일
+- \`--FontColorQuote1\` — 큰따옴표 대화문 스타일
+- \`--FontColorQuote2\` — 작은따옴표 대화문 스타일
 
 ## 응답 규칙
 1. HTML과 CSS를 수정할 때 반드시 다음 JSON 형식으로 응답에 포함하세요:
