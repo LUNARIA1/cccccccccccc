@@ -368,17 +368,48 @@ const SYSTEM_PROMPT = `당신은 RisuAI 테마 디자인 전문 AI 어시스턴�
 - \`<risubuttons></risubuttons>\` — 액션 버튼 행 (복사, 편집, 번역 등)
 - \`<risugeninfo></risugeninfo>\` — 생성 메타데이터 (모델명, 토큰수 등)
 
-## 중요: 부모 래퍼 구조
+## 🚨 중요: 부모 래퍼 구조 & 우측 정렬 문제
 Custom HTML은 다음과 같은 중첩 flex 컨테이너 안에 렌더링됩니다:
 \`\`\`html
 <div class="flex max-w-full justify-center risu-chat">
     <div class="flexium items-start max-w-full grow">
-        <!-- 여기에 Custom HTML이 렌더링됨 -->
+        <div style="">  <!-- ⚠️ RisuAI가 자동 생성하는 보이지 않는 래퍼! width 없음! -->
+            <!-- 여기에 Custom HTML이 렌더링됨 -->
+        </div>
     </div>
 </div>
 \`\`\`
 - \`.flexium\` = display: flex; flex-direction: row; justify-content: flex-start;
-- 따라서 우측 정렬을 하려면 **루트 요소에 반드시 \`width: 100%\`**를 설정해야 합니다.
+- **⚠️ 핵심 문제**: RisuAI가 Custom HTML 바깥에 **빈 \`<div style="">\`을 자동으로 추가**합니다. 이 div에는 width가 없어서 내용물 크기만큼만 줄어듭니다. 따라서 아무리 안쪽에서 \`justify-content: flex-end\`를 사용해도 **유저 메시지 우측 정렬이 작동하지 않습니다.**
+
+### 필수 해결 패턴
+1. **HTML**: 최상위에 고유 래퍼 클래스를 반드시 사용하세요:
+\`\`\`html
+{{#when {{equal::{{role}}::user}}}}
+<div class="my-wrapper">  <!-- 고유 래퍼 -->
+    <div class="my-row my-user">...</div>
+</div>
+{{:else}}
+<div class="my-wrapper">
+    <div class="my-row my-char">...</div>
+</div>
+{{/when}}
+\`\`\`
+
+2. **CSS**: \`:has()\` 선택자로 보이지 않는 부모 div의 너비를 강제 설정하세요:
+\`\`\`css
+/* 필수: RisuAI 자동 부모 div 너비 강제 */
+.flexium:has(.my-wrapper) > div {
+    width: 100%;
+    flex: 1 1 100%;
+}
+
+.my-wrapper {
+    width: 100%;
+    display: block;
+}
+\`\`\`
+이 패턴 없이는 유저 메시지의 우측 정렬이 **절대** 작동하지 않습니다.
 
 ## 지원되는 HTML 요소
 블록: div, p, h1~h6, ul, ol, li, table, tr, td, th, pre, blockquote
@@ -505,7 +536,7 @@ const SAMPLE_MESSAGES = [
     {
         role: 'char',
         name: '캐릭터',
-        text: `안녕하세요! 만나서 반가워요. 이것은 **일반 텍스트**와 다양한 서식의 예시입니다.\n"큰따옴표로 감싼 텍스트입니다" 그리고 '작은따옴표로 감싼 텍스트'도 있어요.\n*이탤릭 텍스트*와 **볼드 텍스트**, 그리고 ***이탤릭 볼드***도 테스트해 볼 수 있습니다.`,
+        text: `안녕하세요! 만나서 반가워요. 이것은 **일반 텍스트**와 다양한 서식의 예시입니다.\n\n"큰따옴표로 감싼 텍스트입니다" 그리고 '작은따옴표로 감싼 텍스트'도 있어요.\n\n*이탤릭 텍스트*와 **볼드 텍스트**, 그리고 ***이탤릭 볼드***도 테스트해 볼 수 있습니다.`,
     },
     {
         role: 'user',
@@ -515,7 +546,7 @@ const SAMPLE_MESSAGES = [
     {
         role: 'char',
         name: '캐릭터',
-        text: `네! 이 프리뷰에서 다양한 서식을 확인할 수 있어요.\n> 이것은 인용문입니다.\n일반 텍스트도 잘 보이나요?`,
+        text: `네! 이 프리뷰에서 다양한 서식을 확인할 수 있어요.\n\n> 이것은 인용문입니다.\n\n일반 텍스트도 잘 보이나요?`,
     },
 ];
 
@@ -1961,4 +1992,3 @@ function init() {
 }
 
 init();
-
