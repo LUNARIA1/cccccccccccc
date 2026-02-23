@@ -368,6 +368,16 @@ const SYSTEM_PROMPT = `당신은 RisuAI 테마 디자인 전문 AI 어시스턴�
 - \`<risubuttons></risubuttons>\` — 액션 버튼 행 (복사, 편집, 번역 등)
 - \`<risugeninfo></risugeninfo>\` — 생성 메타데이터 (모델명, 토큰수 등)
 
+### risuicon 아이콘 숨기기 대응
+RisuAI에서 '아이콘 UI 숨기기'가 활성화되면 \`<risuicon>\`은 **아무것도 렌더링하지 않습니다** (빈 요소조차 없음). 하지만 \`<risuicon>\`을 감싸는 아바타 컨테이너 div는 Custom HTML에 직접 작성한 것이므로 **빈 채로 남아 공간을 차지합니다.**
+반드시 아바타 컨테이너에 \`:empty\` 규칙을 추가하세요:
+\`\`\`css
+/* 아이콘 숨기기 대응: 내용물 없으면 컨테이너 숨김 */
+.my-avatar-container:empty {
+    display: none;
+}
+\`\`\`
+
 ## 🚨 중요: 부모 래퍼 구조 & 우측 정렬 문제
 Custom HTML은 다음과 같은 중첩 flex 컨테이너 안에 렌더링됩니다:
 \`\`\`html
@@ -1992,4 +2002,3 @@ function init() {
 }
 
 init();
-
