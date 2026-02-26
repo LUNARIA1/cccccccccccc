@@ -299,6 +299,126 @@ const DEFAULT_CSS = `/* ══════════════════�
     font-style: italic;
 }
 
+/* — Markdown: Headings — */
+.apple-msg-bubble .chattext h1,
+.apple-msg-bubble .chattext h2,
+.apple-msg-bubble .chattext h3,
+.apple-msg-bubble .chattext h4,
+.apple-msg-bubble .chattext h5,
+.apple-msg-bubble .chattext h6 {
+    color: #ffffff;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 12px 0 6px 0;
+}
+.apple-msg-bubble .chattext h1 { font-size: 1.5em; }
+.apple-msg-bubble .chattext h2 { font-size: 1.3em; }
+.apple-msg-bubble .chattext h3 { font-size: 1.15em; }
+.apple-msg-bubble .chattext h4,
+.apple-msg-bubble .chattext h5,
+.apple-msg-bubble .chattext h6 { font-size: 1em; }
+
+/* — Markdown: Lists — */
+.apple-msg-bubble .chattext ul,
+.apple-msg-bubble .chattext ol {
+    color: #f5f5f7;
+    padding-left: 20px;
+    margin: 6px 0;
+}
+.apple-msg-bubble .chattext ul { list-style-type: disc; }
+.apple-msg-bubble .chattext ol { list-style-type: decimal; }
+.apple-msg-bubble .chattext li {
+    color: #f5f5f7;
+    margin: 2px 0;
+}
+
+/* — Markdown: Inline Code — */
+.apple-msg-bubble .chattext code {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ff9f0a;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 0.9em;
+}
+
+/* — Markdown: Code Block — */
+.apple-msg-bubble .chattext pre {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 12px;
+    margin: 8px 0;
+    overflow-x: auto;
+}
+.apple-msg-bubble .chattext pre code {
+    background: transparent;
+    color: #f5f5f7;
+    padding: 0;
+    font-size: 0.85em;
+    line-height: 1.5;
+}
+
+/* — Markdown: Links — */
+.apple-msg-bubble .chattext a {
+    color: #0a84ff;
+    text-decoration: underline;
+    text-decoration-color: rgba(10, 132, 255, 0.4);
+    transition: text-decoration-color 0.2s;
+}
+.apple-msg-bubble .chattext a:hover {
+    text-decoration-color: #0a84ff;
+}
+
+/* — Markdown: Horizontal Rule — */
+.apple-msg-bubble .chattext hr {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    margin: 12px 0;
+}
+
+/* — Markdown: Tables — */
+.apple-msg-bubble .chattext table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 0.9em;
+}
+.apple-msg-bubble .chattext th {
+    color: #ffffff;
+    font-weight: 600;
+    text-align: left;
+    padding: 6px 10px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+}
+.apple-msg-bubble .chattext td {
+    color: #f5f5f7;
+    padding: 5px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* — Tailwind prose 오버라이드 — */
+.apple-msg-bubble .chattext h1,
+.apple-msg-bubble .chattext h2,
+.apple-msg-bubble .chattext h3,
+.apple-msg-bubble .chattext h4,
+.apple-msg-bubble .chattext h5,
+.apple-msg-bubble .chattext h6,
+.apple-msg-bubble .chattext ul,
+.apple-msg-bubble .chattext ol,
+.apple-msg-bubble .chattext li,
+.apple-msg-bubble .chattext code,
+.apple-msg-bubble .chattext pre,
+.apple-msg-bubble .chattext a,
+.apple-msg-bubble .chattext table,
+.apple-msg-bubble .chattext th,
+.apple-msg-bubble .chattext td,
+.apple-msg-bubble .chattext hr {
+    --tw-prose-headings: #ffffff;
+    --tw-prose-links: #0a84ff;
+    --tw-prose-code: #ff9f0a;
+}
+
 /* — Action Buttons — */
 .apple-msg-actions {
     display: flex;
@@ -452,18 +572,28 @@ Void: img, hr, br
 - \`{{setvar::name::value}}\` — 채팅 변수 쓰기
 
 ## ⚡ 중요: risutextbox 내부 렌더링 구조
-\`<risutextbox>\`는 RisuAI에서 다음 DOM 구조로 치환됩니다:
+\`<risutextbox>\`는 RisuAI에서 다음 DOM 구조로 치환됩니다. **마크다운이 HTML로 변환**되어 렌더링됩니다:
 \`\`\`html
-<div class="chattext">
+<span class="chattext prose">
     <p>일반 텍스트</p>
     <p><strong>볼드</strong></p>
     <p><em>이탤릭</em></p>
     <p><mark risu-mark="quote1">"큰따옴표 대화문"</mark></p>
     <p><mark risu-mark="quote2">'작은따옴표 대화문'</mark></p>
     <blockquote>인용문</blockquote>
-</div>
+    <!-- 마크다운에서 변환되는 요소들 -->
+    <h1>제목1</h1> <h2>제목2</h2> <h3>제목3</h3>
+    <ul><li>순서 없는 목록</li></ul>
+    <ol><li>순서 있는 목록</li></ol>
+    <code>인라인 코드</code>
+    <pre><code>코드 블록</code></pre>
+    <a href="...">링크</a>
+    <hr>
+    <table><tr><th>헤더</th></tr><tr><td>셀</td></tr></table>
+</span>
 \`\`\`
-따라서 CSS에서 텍스트 스타일을 지정할 때 반드시 \`.chattext\`를 기준으로 선택자를 작성해야 합니다.
+⚠️ **중요**: chattext에는 Tailwind의 \`.prose\` 클래스가 적용되어 있어, \`--tw-prose-headings\`, \`--tw-prose-links\` 등의 기본 색상이 적용됩니다. 커스텀 테마에서는 이 prose 스타일도 반드시 오버라이드해야 합니다.
+CSS에서 텍스트 스타일을 지정할 때 반드시 \`.chattext\`를 기준으로 선택자를 작성해야 합니다.
 
 ## ⚠️ CSS 필수 규칙 (반드시 준수)
 1. **색상은 절대 var()만 사용하지 마세요.** RisuAI의 기본 테마 CSS가 덮어쓸 수 있습니다.
@@ -512,6 +642,71 @@ Void: img, hr, br
        margin: 6px 0;
        color: #A396AD;
    }
+   
+   /* 필수: 마크다운 제목 */
+   .your-bubble .chattext h1,
+   .your-bubble .chattext h2,
+   .your-bubble .chattext h3,
+   .your-bubble .chattext h4,
+   .your-bubble .chattext h5,
+   .your-bubble .chattext h6 {
+       color: #3C2E43;       /* 직접 색상값 */
+       font-weight: 700;
+       margin: 12px 0 6px 0;
+   }
+   .your-bubble .chattext h1 { font-size: 1.5em; }
+   .your-bubble .chattext h2 { font-size: 1.3em; }
+   .your-bubble .chattext h3 { font-size: 1.15em; }
+   
+   /* 필수: 목록 */
+   .your-bubble .chattext ul,
+   .your-bubble .chattext ol {
+       color: #504456;
+       padding-left: 20px;
+       margin: 6px 0;
+   }
+   .your-bubble .chattext ul { list-style-type: disc; }
+   .your-bubble .chattext ol { list-style-type: decimal; }
+   .your-bubble .chattext li { color: #504456; }
+   
+   /* 필수: 코드 */
+   .your-bubble .chattext code {
+       background: rgba(0, 0, 0, 0.06);
+       color: #D63384;
+       padding: 1px 5px;
+       border-radius: 4px;
+       font-family: monospace;
+       font-size: 0.9em;
+   }
+   .your-bubble .chattext pre {
+       background: rgba(0, 0, 0, 0.05);
+       border-radius: 8px;
+       padding: 12px;
+       margin: 8px 0;
+       overflow-x: auto;
+   }
+   .your-bubble .chattext pre code {
+       background: transparent;
+       color: #504456;
+       padding: 0;
+   }
+   
+   /* 필수: 링크, 수평선, 테이블 */
+   .your-bubble .chattext a { color: #0066CC; }
+   .your-bubble .chattext hr { border-top: 1px solid rgba(0,0,0,0.1); }
+   .your-bubble .chattext th,
+   .your-bubble .chattext td {
+       color: #504456;
+       padding: 5px 10px;
+       border-bottom: 1px solid rgba(0,0,0,0.08);
+   }
+   
+   /* 필수: Tailwind prose 오버라이드 */
+   .your-bubble .chattext {
+       --tw-prose-headings: #3C2E43;
+       --tw-prose-links: #0066CC;
+       --tw-prose-code: #D63384;
+   }
    \`\`\`
 
 3. **유저 버블과 캐릭터 버블의 텍스트 색상이 다를 수 있으므로 각각 지정하세요.**
@@ -557,6 +752,11 @@ const SAMPLE_MESSAGES = [
         role: 'char',
         name: '캐릭터',
         text: `네! 이 프리뷰에서 다양한 서식을 확인할 수 있어요.\n> 이것은 인용문입니다.\n일반 텍스트도 잘 보이나요?`,
+    },
+    {
+        role: 'char',
+        name: '캐릭터',
+        text: `## 마크다운 서식 테스트\n\n아래는 마크다운 요소들의 렌더링 예시입니다:\n\n- 첫 번째 항목\n- 두 번째 항목\n- **볼드 항목**\n\n인라인 \`코드\` 테스트입니다.\n\n---\n\n\`\`\`\nconst theme = 'custom';\nconsole.log(theme);\n\`\`\``,
     },
 ];
 
@@ -668,6 +868,41 @@ function processLegacyConditionals(html, msg) {
 function formatMessageText(text) {
     let result = escapeHtml(text);
 
+    // Code blocks (``` ... ```) — process FIRST before other formatting
+    result = result.replace(/```([\s\S]*?)```/g, (_, code) => {
+        return `</p><pre><code>${code.replace(/<br>/g, '\n').trim()}</code></pre><p>`;
+    });
+
+    // Inline code (`code`)
+    result = result.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Headings (### before ## before #)
+    result = result.replace(/^#{3}\s+(.*)$/gm, '</p><h3>$1</h3><p>');
+    result = result.replace(/^#{2}\s+(.*)$/gm, '</p><h2>$1</h2><p>');
+    result = result.replace(/^#{1}\s+(.*)$/gm, '</p><h1>$1</h1><p>');
+
+    // Horizontal rule (--- or ***)
+    result = result.replace(/^(-{3,}|\*{3,})$/gm, '</p><hr><p>');
+
+    // Unordered list items (- item)
+    result = result.replace(/(?:^|\n)((?:- .*(?:\n|$))+)/g, (_, block) => {
+        const items = block.trim().split('\n').map(line =>
+            `<li>${line.replace(/^- /, '')}</li>`
+        ).join('');
+        return `</p><ul>${items}</ul><p>`;
+    });
+
+    // Ordered list items (1. item)
+    result = result.replace(/(?:^|\n)((?:\d+\. .*(?:\n|$))+)/g, (_, block) => {
+        const items = block.trim().split('\n').map(line =>
+            `<li>${line.replace(/^\d+\. /, '')}</li>`
+        ).join('');
+        return `</p><ol>${items}</ol><p>`;
+    });
+
+    // Links [text](url)
+    result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href=\'$2\' target=\'_blank\'>$1</a>');
+
     // Bold italic
     result = result.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
     // Bold
@@ -675,7 +910,7 @@ function formatMessageText(text) {
     // Italic
     result = result.replace(/\*(.*?)\*/g, '<em>$1</em>');
     // Blockquote
-    result = result.replace(/^&gt;\s?(.*)$/gm, '<blockquote>$1</blockquote>');
+    result = result.replace(/^&gt;\s?(.*)$/gm, '</p><blockquote>$1</blockquote><p>');
     // Double quotes
     result = result.replace(/&quot;(.*?)&quot;/g, '<mark risu-mark="quote1">"$1"</mark>');
     result = result.replace(/"(.*?)"/g, '<mark risu-mark="quote1">"$1"</mark>');
@@ -685,7 +920,12 @@ function formatMessageText(text) {
     // Line breaks
     result = result.replace(/\n/g, '<br>');
 
-    return `<p>${result}</p>`;
+    // Clean up empty <p></p> tags
+    result = `<p>${result}</p>`;
+    result = result.replace(/<p><\/p>/g, '');
+    result = result.replace(/<p><br>/g, '<p>');
+
+    return result;
 }
 
 function escapeHtml(text) {
