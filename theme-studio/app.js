@@ -12,6 +12,8 @@ const state = {
     currentSessionId: null,
     chatMessages: [],
     isGenerating: false,
+    previousHtml: null,  // 직전 적용 전 HTML 상태
+    previousCss: null,   // 직전 적용 전 CSS 상태
 };
 
 function defaultSettings() {
@@ -419,6 +421,24 @@ const DEFAULT_CSS = `/* ══════════════════�
     --tw-prose-code: #ff9f0a;
 }
 
+/* — Edit Mode: 메시지 수정 textarea (말풍선 안쪽만) — */
+.apple-msg-bubble .text-textcolor,
+.apple-msg-bubble textarea,
+.apple-msg-bubble .message-edit-area {
+    color: #f5f5f7 !important;
+    caret-color: #f5f5f7;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+.apple-bubble-user .text-textcolor,
+.apple-bubble-user textarea,
+.apple-bubble-user .message-edit-area {
+    color: #ffffff !important;
+    caret-color: #ffffff;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
 /* — Action Buttons — */
 .apple-msg-actions {
     display: flex;
@@ -595,6 +615,20 @@ Void: img, hr, br
 ⚠️ **중요**: chattext에는 Tailwind의 \`.prose\` 클래스가 적용되어 있어, \`--tw-prose-headings\`, \`--tw-prose-links\` 등의 기본 색상이 적용됩니다. 커스텀 테마에서는 이 prose 스타일도 반드시 오버라이드해야 합니다.
 CSS에서 텍스트 스타일을 지정할 때 반드시 \`.chattext\`를 기준으로 선택자를 작성해야 합니다.
 
+### 메시지 수정 모드 (Edit Mode)
+사용자가 메시지 '수정' 버튼을 클릭하면, \`<risutextbox>\` 자리에 \`<textarea class="text-textcolor message-edit-area">\`가 나타납니다. 이 textarea는 RisuAI 기본 색상(\`.text-textcolor\`)을 사용하므로, 어두운 말풍선에서는 텍스트가 보이지 않을 수 있습니다.
+**반드시** 말풍선 안쪽의 textarea만 타겟팅하여 색상을 오버라이드하세요:
+\`\`\`css
+.your-bubble .text-textcolor,
+.your-bubble textarea {
+    color: #f5f5f7 !important;  /* 말풍선 텍스트 색상과 동일 */
+    caret-color: #f5f5f7;
+    background: rgba(255,255,255,0.05) !important;
+    border-color: rgba(255,255,255,0.15) !important;
+}
+\`\`\`
+⚠️ \`.text-textcolor\`를 전역으로 바꾸면 다른 UI까지 영향을 받으므로, **반드시 말풍선 선택자 안쪽으로 범위를 한정**하세요.
+
 ## ⚠️ CSS 필수 규칙 (반드시 준수)
 1. **색상은 절대 var()만 사용하지 마세요.** RisuAI의 기본 테마 CSS가 덮어쓸 수 있습니다.
    - ❌ \`color: var(--my-text);\`
@@ -706,6 +740,16 @@ CSS에서 텍스트 스타일을 지정할 때 반드시 \`.chattext\`를 기준
        --tw-prose-headings: #3C2E43;
        --tw-prose-links: #0066CC;
        --tw-prose-code: #D63384;
+   }
+   
+   /* 필수: 메시지 수정 textarea (말풍선 안쪽만 타겟팅) */
+   .your-bubble .text-textcolor,
+   .your-bubble textarea,
+   .your-bubble .message-edit-area {
+       color: #504456 !important;       /* 말풍선 텍스트 색상과 동일 */
+       caret-color: #504456;
+       background: rgba(0, 0, 0, 0.03) !important;
+       border-color: rgba(0, 0, 0, 0.1) !important;
    }
    \`\`\`
 
@@ -1493,13 +1537,32 @@ function buildContextMessage() {
     const html = editorHtml.value;
     const css = editorCss.value;
     if (!html && !css) return '[현재 HTML/CSS가 비어있습니다.]';
-    return `[현재 상태]
+
+    let ctx = `[현재 상태]
 \`\`\`html
 ${html}
 \`\`\`
 \`\`\`css
 ${css}
 \`\`\``;
+
+    // 이전 상태가 있으면 포함 ("이전으로 돌려줘" 같은 요청에 대응)
+    if (state.previousHtml !== null || state.previousCss !== null) {
+        const prevHtml = state.previousHtml || '';
+        const prevCss = state.previousCss || '';
+        // 현재와 다를 때만 포함 (같으면 의미 없음)
+        if (prevHtml !== html || prevCss !== css) {
+            ctx += `\n\n[직전 상태 (마지막 적용 전)]
+\`\`\`html
+${prevHtml}
+\`\`\`
+\`\`\`css
+${prevCss}
+\`\`\``;
+        }
+    }
+
+    return ctx;
 }
 
 function addChatMessage(role, text, html, css) {
@@ -1630,8 +1693,16 @@ window.applyChanges = function (btn) {
     const html = btn.dataset.html ? decodeURIComponent(btn.dataset.html) : null;
     const css = btn.dataset.css ? decodeURIComponent(btn.dataset.css) : null;
 
+    // 적용 전 현재 상태를 "이전 상태"로 저장
+    state.previousHtml = editorHtml.value;
+    state.previousCss = editorCss.value;
+
     if (html) editorHtml.value = html;
     if (css) editorCss.value = css;
+
+    // localStorage도 업데이트
+    localStorage.setItem('risu-studio-html', editorHtml.value);
+    localStorage.setItem('risu-studio-css', editorCss.value);
 
     renderPreview();
     showToast('변경사항이 적용되었습니다!', 'success');
