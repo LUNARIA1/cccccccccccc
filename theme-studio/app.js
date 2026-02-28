@@ -616,12 +616,12 @@ Void: img, hr, br
 CSS에서 텍스트 스타일을 지정할 때 반드시 \`.chattext\`를 기준으로 선택자를 작성해야 합니다.
 
 ### 메시지 수정 모드 (Edit Mode)
-사용자가 메시지 '수정' 버튼을 클릭하면, \`<risutextbox>\` 자리에 \`<textarea class="text-textcolor message-edit-area">\`가 나타납니다. 이 textarea는 RisuAI 기본 색상(\`.text-textcolor\`)을 사용하므로, 어두운 말풍선에서는 텍스트가 보이지 않을 수 있습니다.
-**반드시** 말풍선 안쪽의 textarea만 타겟팅하여 색상을 오버라이드하세요:
+사용자가 메시지 '수정' 버튼을 클릭하면, \`<risutextbox>\` 자리에 \`<textarea class="text-textcolor message-edit-area">\`가 나타납니다. \`.text-textcolor\`는 RisuAI의 이전 테마 설정에 따라 **어떤 색이든 될 수 있어** (흰색, 검정, 파랑 등) 말풍선 배경과 충돌합니다.
+\`.chattext\% 요소와 마찬가지로, 말풍선 안쪽의 textarea 색상도 **반드시 직접 하드코딩**하세요:
 \`\`\`css
 .your-bubble .text-textcolor,
 .your-bubble textarea {
-    color: #f5f5f7 !important;  /* 말풍선 텍스트 색상과 동일 */
+    color: #f5f5f7 !important;  /* 말풍선 텍스트 색상과 동일하게 하드코딩 */
     caret-color: #f5f5f7;
     background: rgba(255,255,255,0.05) !important;
     border-color: rgba(255,255,255,0.15) !important;
