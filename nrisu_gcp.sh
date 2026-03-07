@@ -11,6 +11,53 @@ else
     SUDO=""
 fi
 
+# ── 스왑 설정 ──────────────────────────────────────────────
+echo "💾 메모리 확인 중..."
+TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+TOTAL_RAM_GB=$((TOTAL_RAM_KB / 1024 / 1024))
+SWAP_NOW_KB=$(grep SwapTotal /proc/meminfo | awk '{print $2}')
+
+echo "   RAM: ${TOTAL_RAM_GB}GB / 스왑: $((SWAP_NOW_KB / 1024 / 1024))GB"
+
+# RAM이 4GB 미만이면 스왑 자동 설정
+if [ "$TOTAL_RAM_GB" -lt 4 ] && [ "$SWAP_NOW_KB" -lt 1048576 ]; then
+    echo "⚠️  RAM이 ${TOTAL_RAM_GB}GB로 부족합니다. 스왑을 설정합니다..."
+
+    # 기존 스왑파일 제거
+    if [ -f /swapfile ]; then
+        $SUDO swapoff /swapfile 2>/dev/null || true
+        $SUDO rm -f /swapfile
+    fi
+
+    # RAM의 2배 또는 최소 4GB 스왑 생성
+    SWAP_SIZE_GB=4
+    if [ "$TOTAL_RAM_GB" -ge 2 ]; then
+        SWAP_SIZE_GB=$((TOTAL_RAM_GB * 2))
+    fi
+
+    echo "📝 ${SWAP_SIZE_GB}GB 스왑 생성 중..."
+    $SUDO fallocate -l ${SWAP_SIZE_GB}G /swapfile
+    $SUDO chmod 600 /swapfile
+    $SUDO mkswap /swapfile
+    $SUDO swapon /swapfile
+
+    # 재부팅 후에도 유지
+    if ! grep -q '/swapfile' /etc/fstab; then
+        echo '/swapfile none swap sw 0 0' | $SUDO tee -a /etc/fstab > /dev/null
+    fi
+
+    # 스왑 사용 적극성 낮춤 (RAM 최대한 쓰고 스왑은 나중에)
+    $SUDO sysctl vm.swappiness=10 > /dev/null
+    if ! grep -q 'vm.swappiness' /etc/sysctl.conf; then
+        echo 'vm.swappiness=10' | $SUDO tee -a /etc/sysctl.conf > /dev/null
+    fi
+
+    echo "✅ 스왑 ${SWAP_SIZE_GB}GB 설정 완료!"
+else
+    echo "✅ 메모리 충분, 스왑 설정 불필요"
+fi
+echo ""
+
 # apt 패키지 업데이트
 echo "📦 패키지 업데이트 중..."
 $SUDO apt update -y
@@ -42,15 +89,19 @@ fi
 git clone "https://github.com/kwaroran/RisuAI.git" "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-# NODE_OPTIONS 환경변수 설정
+# NODE_OPTIONS 환경변수 설정 (실제 가용 메모리 기준으로 자동 계산)
 echo "⚙️  환경변수 설정 중..."
+TOTAL_MEM_MB=$(( ($(grep MemTotal /proc/meminfo | awk '{print $2}') + $(grep SwapTotal /proc/meminfo | awk '{print $2}')) / 1024 ))
+NODE_MEM_MB=$(( TOTAL_MEM_MB * 75 / 100 ))  # 전체의 75%만 Node에 할당
+echo "   Node.js 메모리 한도: ${NODE_MEM_MB}MB (전체 ${TOTAL_MEM_MB}MB의 75%)"
+
 BASHRC="$HOME/.bashrc"
-if ! grep -q "NODE_OPTIONS=--max_old_space_size=4096" "$BASHRC"; then
-    echo 'export NODE_OPTIONS=--max_old_space_size=4096' >> "$BASHRC"
-fi
+# 기존 NODE_OPTIONS 제거 후 새로 추가
+sed -i '/NODE_OPTIONS/d' "$BASHRC"
+echo "export NODE_OPTIONS=--max_old_space_size=${NODE_MEM_MB}" >> "$BASHRC"
 
 # 환경변수 즉시 적용
-export NODE_OPTIONS=--max_old_space_size=4096
+export NODE_OPTIONS=--max_old_space_size=${NODE_MEM_MB}
 
 # 의존성 설치
 echo "📦 의존성 설치 중..."
