@@ -75,6 +75,17 @@ if ! command -v node &> /dev/null; then
 fi
 echo "✅ Node.js 버전: $(node -v)"
 
+# npm 글로벌 설치 경로를 홈 디렉토리로 변경 (권한 오류 방지)
+echo "⚙️  npm 글로벌 경로 설정 중..."
+mkdir -p "$HOME/.npm-global"
+npm config set prefix "$HOME/.npm-global"
+if ! grep -q 'NPM_CONFIG_PREFIX' "$HOME/.bashrc"; then
+    echo 'export NPM_CONFIG_PREFIX="$HOME/.npm-global"' >> "$HOME/.bashrc"
+    echo 'export PATH="$HOME/.npm-global/bin:$PATH"' >> "$HOME/.bashrc"
+fi
+export NPM_CONFIG_PREFIX="$HOME/.npm-global"
+export PATH="$HOME/.npm-global/bin:$PATH"
+
 # pnpm 설치
 echo "📥 pnpm 설치 중..."
 npm install -g pnpm
