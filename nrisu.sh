@@ -44,6 +44,29 @@ pnpm install
 echo "📦 PM2 설치 중..."
 npm install -g pm2@latest
 
+# Temporary upstream build fix for duplicate `let betas = []` in anthropic.ts.
+echo "Applying RisuAI build compatibility patch..."
+node <<'NODE'
+const fs = require('fs');
+const file = 'src/ts/process/request/anthropic.ts';
+let text = fs.readFileSync(file, 'utf8');
+let seen = false;
+let patched = false;
+
+text = text.replace(/^(\s*)let betas(?::[^=]+)?=\s*\[\];\s*$/gm, (line, indent) => {
+  if (!seen) {
+    seen = true;
+    return line;
+  }
+
+  patched = true;
+  return `${indent}betas = [];`;
+});
+
+fs.writeFileSync(file, text);
+console.log(patched ? 'Patched duplicate betas declaration.' : 'No duplicate betas declaration found.');
+NODE
+
 # 빌드
 echo "🔨 빌드 중..."
 pnpm run build
