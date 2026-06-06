@@ -146,6 +146,16 @@
     padding: 4px 12px 12px;
   }
   
+  .file-item-wrapper {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .folder-children {
+    display: flex;
+    flex-direction: column;
+  }
+  
   .file-item {
     display: flex;
     align-items: center;
@@ -168,6 +178,10 @@
     box-shadow: var(--shadow-button-ring);
   }
   
+  .file-item.folder-item {
+    font-weight: 500;
+  }
+  
   .file-icon {
     width: 32px;
     height: 32px;
@@ -181,6 +195,14 @@
     flex-shrink: 0;
     color: var(--color-driftwood);
     transition: all 0.2s ease;
+  }
+  
+  .file-icon.folder {
+    color: var(--color-driftwood);
+  }
+  
+  .file-item:hover .file-icon {
+    border-color: var(--color-midnight-ink);
   }
   
   .file-item.selected .file-icon {
@@ -691,6 +713,15 @@
     line-height: 1.5;
   }
   
+  select.key-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 20px;
+    padding-right: 36px;
+  }
+  
   /* Tab Switcher inside Modal */
   .tab-switcher {
     background: var(--color-warm-sand);
@@ -1015,6 +1046,16 @@
         </span>
         Drive 연결
       </button>
+      <button class="nav-btn" id="btn-new-folder" disabled>
+        <span class="nb-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+            <line x1="12" y1="11" x2="12" y2="17"></line>
+            <line x1="9" y1="14" x2="15" y2="14"></line>
+          </svg>
+        </span>
+        새 폴더
+      </button>
       <button class="nav-btn" id="btn-upload" disabled>
         <span class="nb-icon">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1098,6 +1139,9 @@
       <div id="upload-pw-notice" class="pw-notice">마스터 비밀번호로 자동 암호화됩니다</div>
       <div id="upload-pw-warning" class="pw-warning" style="display:none">설정에서 마스터 비밀번호를 먼저 등록하세요</div>
       
+      <label class="field-label">저장할 폴더</label>
+      <select class="key-input" id="upload-folder-select"></select>
+
       <!-- Tab Switcher -->
       <div class="tab-switcher">
         <button class="tab-btn active" id="tab-file-upload">파일 업로드</button>
@@ -1126,6 +1170,27 @@
     <div class="modal-footer">
       <button class="btn" id="upload-cancel">취소</button>
       <button class="btn primary" id="upload-confirm">🔐 암호화 & 업로드</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Folder Modal -->
+<div class="modal-overlay hidden" id="folder-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>새 폴더 생성</h3>
+      <button class="modal-close" id="folder-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <label class="field-label">상위 폴더</label>
+      <select class="key-input" id="folder-parent-select"></select>
+      <label class="field-label">폴더 이름 <span class="req">*</span></label>
+      <input type="text" class="key-input" id="folder-name-input" placeholder="폴더 이름 입력">
+      <div class="error-msg" id="folder-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="folder-cancel">취소</button>
+      <button class="btn primary" id="folder-confirm">생성</button>
     </div>
   </div>
 </div>
@@ -1180,6 +1245,8 @@ const ENC_EXT = '.svenc';
 let tokenClient = null, accessToken = null, folderId = null;
 let files = [], selectedFile = null;
 let currentDecryptedText = '';
+let fileTreeRoot = null;
+let expandedFolderIds = new Set();
 
 /* ===== CRYPTO ===== */
 async function deriveKey(password, salt) {
@@ -1242,6 +1309,7 @@ function setConnected(v) {
   document.getElementById('gstatus').textContent = v ? 'Drive 연결됨' : 'Google Drive 연결 안됨';
   document.getElementById('btn-upload').disabled = !v;
   document.getElementById('btn-refresh').disabled = !v;
+  document.getElementById('btn-new-folder').disabled = !v;
 }
 
 async function driveReq(url, opts = {}) {
@@ -1265,14 +1333,23 @@ async function ensureFolder() {
 
 async function loadFiles() {
   if (!folderId) return;
-  const q = `'${folderId}' in parents and trashed=false`;
-  const r = await driveReq(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,size,modifiedTime)&orderBy=modifiedTime desc`);
-  files = (await r.json()).files || [];
-  renderFileList();
+  try {
+    const q = `trashed=false`;
+    const r = await driveReq(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,size,mimeType,parents,modifiedTime)&orderBy=modifiedTime desc`);
+    const allFiles = (await r.json()).files || [];
+    
+    files = allFiles;
+    fileTreeRoot = buildFileTree(files, folderId);
+    
+    renderFileList();
+    populateFolderSelects();
+  } catch (e) {
+    toast('파일 목록 로드 실패: ' + e.message, 'error');
+  }
 }
 
-async function uploadEncrypted(buffer, filename) {
-  const meta = { name: filename, parents: [folderId] };
+async function uploadEncrypted(buffer, filename, parentFolderId) {
+  const meta = { name: filename, parents: [parentFolderId || folderId] };
   const form = new FormData();
   form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
   form.append('file', new Blob([buffer], { type: 'application/octet-stream' }));
@@ -1285,6 +1362,83 @@ async function downloadFile(fileId) {
 
 async function deleteFile(fileId) {
   await driveReq(`https://www.googleapis.com/drive/v3/files/${fileId}`, { method: 'DELETE' });
+}
+
+/* ===== TREE NAVIGATION LOGIC ===== */
+function buildFileTree(filesList, rootId) {
+  const nodeMap = {};
+  filesList.forEach(f => {
+    nodeMap[f.id] = {
+      ...f,
+      children: [],
+      isFolder: f.mimeType === 'application/vnd.google-apps.folder',
+      parentId: f.parents && f.parents.length ? f.parents[0] : null
+    };
+  });
+  
+  const rootNode = {
+    id: rootId,
+    name: FOLDER_NAME,
+    isFolder: true,
+    children: [],
+    parentId: null
+  };
+  nodeMap[rootId] = rootNode;
+  
+  filesList.forEach(f => {
+    const node = nodeMap[f.id];
+    if (node.parentId && nodeMap[node.parentId]) {
+      nodeMap[node.parentId].children.push(node);
+    }
+  });
+  
+  function sortNode(node) {
+    node.children.sort((a, b) => {
+      if (a.isFolder && !b.isFolder) return -1;
+      if (!a.isFolder && b.isFolder) return 1;
+      if (a.isFolder && b.isFolder) {
+        return a.name.localeCompare(b.name, 'ko');
+      }
+      return new Date(b.modifiedTime) - new Date(a.modifiedTime);
+    });
+    node.children.forEach(sortNode);
+  }
+  
+  sortNode(rootNode);
+  return rootNode;
+}
+
+function toggleFolder(id, event) {
+  if (event) event.stopPropagation();
+  if (expandedFolderIds.has(id)) {
+    expandedFolderIds.delete(id);
+  } else {
+    expandedFolderIds.add(id);
+  }
+  renderFileList();
+}
+
+function populateFolderSelects() {
+  const uploadSelect = document.getElementById('upload-folder-select');
+  const parentSelect = document.getElementById('folder-parent-select');
+  
+  const folders = [];
+  function traverse(node, path = '') {
+    if (node.isFolder) {
+      const currentPath = path ? `${path} / ${node.name}` : node.name;
+      folders.push({ id: node.id, path: currentPath });
+      node.children.forEach(c => traverse(c, currentPath));
+    }
+  }
+  
+  if (fileTreeRoot) {
+    traverse(fileTreeRoot);
+  }
+  
+  const optionsHtml = folders.map(f => `<option value="${f.id}">${f.path}</option>`).join('');
+  
+  if (uploadSelect) uploadSelect.innerHTML = optionsHtml;
+  if (parentSelect) parentSelect.innerHTML = optionsHtml;
 }
 
 /* ===== UI HELPERS ===== */
@@ -1310,24 +1464,63 @@ const FILE_ICONS = {
   enc: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
 };
 
+const FOLDER_ICONS = {
+  collapsed: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+  expanded: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><path d="M2 10h20"></path></svg>`
+};
+
+function renderTree(node, depth = 0) {
+  if (!node.children || node.children.length === 0) return '';
+  
+  return node.children.map(child => {
+    const indent = depth * 16;
+    const isFolder = child.isFolder;
+    
+    if (isFolder) {
+      const isExpanded = expandedFolderIds.has(child.id);
+      const iconSvg = isExpanded ? FOLDER_ICONS.expanded : FOLDER_ICONS.collapsed;
+      
+      let childrenHtml = '';
+      if (isExpanded) {
+        childrenHtml = `<div class="folder-children">${renderTree(child, depth + 1)}</div>`;
+      }
+      
+      return `
+        <div class="file-item-wrapper">
+          <div class="file-item folder-item" style="padding-left: ${indent + 12}px" onclick="toggleFolder('${child.id}', event)">
+            <div class="file-icon folder">${iconSvg}</div>
+            <div class="file-meta">
+              <div class="file-name" title="${child.name}">${child.name}</div>
+            </div>
+          </div>
+          ${childrenHtml}
+        </div>
+      `;
+    } else {
+      const orig = getOrigName(child.name), type = getFileType(orig);
+      const sel = selectedFile && selectedFile.id === child.id;
+      const iconSvg = FILE_ICONS[type] || FILE_ICONS['enc'];
+      
+      return `
+        <div class="file-item${sel?' selected':''}" style="padding-left: ${indent + 12}px" onclick="selectFile('${child.id}')">
+          <div class="file-icon ${type}">${iconSvg}</div>
+          <div class="file-meta">
+            <div class="file-name" title="${orig}">${orig}</div>
+            <div class="file-size">${formatSize(child.size)}</div>
+          </div>
+        </div>
+      `;
+    }
+  }).join('');
+}
+
 function renderFileList() {
   const list = document.getElementById('file-list');
-  if (!files.length) {
+  if (!files.length || !fileTreeRoot || !fileTreeRoot.children || !fileTreeRoot.children.length) {
     list.innerHTML = '<div style="padding:24px 12px;text-align:center;color:var(--color-driftwood);font-size:12px;font-family:var(--font-inter)">암호화된 파일 없음</div>';
     return;
   }
-  list.innerHTML = files.map(f => {
-    const orig = getOrigName(f.name), type = getFileType(orig);
-    const sel = selectedFile && selectedFile.id === f.id;
-    const iconSvg = FILE_ICONS[type] || FILE_ICONS['enc'];
-    return `<div class="file-item${sel?' selected':''}" onclick="selectFile('${f.id}')">
-      <div class="file-icon ${type}">${iconSvg}</div>
-      <div class="file-meta">
-        <div class="file-name" title="${orig}">${orig}</div>
-        <div class="file-size">${formatSize(f.size)}</div>
-      </div>
-    </div>`;
-  }).join('');
+  list.innerHTML = renderTree(fileTreeRoot, 0);
 }
 
 function showContent(html) {
@@ -1425,6 +1618,7 @@ document.getElementById('btn-upload').onclick = () => {
   
   // Set default tab to file mode
   document.getElementById('tab-file-upload').click();
+  populateFolderSelects();
   
   const hasPw = !!MASTER_PASSWORD;
   document.getElementById('upload-pw-notice').style.display = hasPw ? '' : 'none';
@@ -1484,8 +1678,9 @@ document.getElementById('upload-confirm').onclick = async () => {
       buf = encoder.encode(text).buffer;
     }
     
+    const targetParentId = document.getElementById('upload-folder-select').value || folderId;
     const enc = await encryptData(buf, MASTER_PASSWORD);
-    await uploadEncrypted(enc, filename + ENC_EXT);
+    await uploadEncrypted(enc, filename + ENC_EXT, targetParentId);
     document.getElementById('upload-modal').classList.add('hidden');
     toast(filename + ' 암호화 & 업로드 완료', 'success');
     
@@ -1505,6 +1700,72 @@ document.getElementById('upload-confirm').onclick = async () => {
 
 document.getElementById('upload-cancel').onclick = () => document.getElementById('upload-modal').classList.add('hidden');
 document.getElementById('upload-modal-close').onclick = () => document.getElementById('upload-modal').classList.add('hidden');
+
+/* ===== NEW FOLDER ===== */
+document.getElementById('btn-new-folder').onclick = () => {
+  document.getElementById('folder-name-input').value = '';
+  document.getElementById('folder-error').style.display = 'none';
+  populateFolderSelects();
+  
+  const uploadSelect = document.getElementById('upload-folder-select');
+  if (uploadSelect && uploadSelect.value) {
+    document.getElementById('folder-parent-select').value = uploadSelect.value;
+  } else if (folderId) {
+    document.getElementById('folder-parent-select').value = folderId;
+  }
+  
+  document.getElementById('folder-modal').classList.remove('hidden');
+};
+
+document.getElementById('folder-cancel').onclick = () => {
+  document.getElementById('folder-modal').classList.add('hidden');
+};
+
+document.getElementById('folder-modal-close').onclick = () => {
+  document.getElementById('folder-modal').classList.add('hidden');
+};
+
+document.getElementById('folder-confirm').onclick = async () => {
+  const name = document.getElementById('folder-name-input').value.trim();
+  const parentId = document.getElementById('folder-parent-select').value;
+  
+  if (!name) {
+    showError('folder-error', '폴더 이름을 입력하세요');
+    return;
+  }
+  
+  const btn = document.getElementById('folder-confirm');
+  btn.disabled = true;
+  btn.textContent = '생성 중...';
+  
+  try {
+    await createDriveFolder(name, parentId);
+    document.getElementById('folder-modal').classList.add('hidden');
+    toast(`폴더 "${name}" 생성 완료`, 'success');
+    
+    expandedFolderIds.add(parentId);
+    await loadFiles();
+  } catch (e) {
+    showError('folder-error', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '생성';
+  }
+};
+
+async function createDriveFolder(name, parentId) {
+  const c = await driveReq('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      name: name,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [parentId]
+    })
+  });
+  if (!c.ok) throw new Error('폴더 생성 실패 ' + c.status);
+  return c.json();
+}
 
 /* ===== DELETE ===== */
 document.getElementById('btn-delete').onclick = async () => {
