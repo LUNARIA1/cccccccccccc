@@ -1359,9 +1359,26 @@ async function ensureFolder() {
 async function loadFiles() {
   if (!folderId) return;
   try {
-    const q = `trashed=false`;
-    const r = await driveReq(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,size,mimeType,parents,modifiedTime)&orderBy=modifiedTime desc`);
-    const allFiles = (await r.json()).files || [];
+    const allFiles = [];
+    const foldersToScan = [folderId];
+    const scannedFolderIds = new Set();
+    
+    while (foldersToScan.length > 0) {
+      const currentFolderId = foldersToScan.shift();
+      if (scannedFolderIds.has(currentFolderId)) continue;
+      scannedFolderIds.add(currentFolderId);
+      
+      const q = `'${currentFolderId}' in parents and trashed=false`;
+      const r = await driveReq(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,size,mimeType,parents,modifiedTime)&orderBy=modifiedTime desc`);
+      const filesInFolder = (await r.json()).files || [];
+      
+      filesInFolder.forEach(f => {
+        allFiles.push(f);
+        if (f.mimeType === 'application/vnd.google-apps.folder') {
+          foldersToScan.push(f.id);
+        }
+      });
+    }
     
     files = allFiles;
     fileTreeRoot = buildFileTree(files, folderId);
@@ -1405,8 +1422,18 @@ async function moveDriveFile(fileId, newParentId, oldParentId) {
 
 /* ===== TREE NAVIGATION LOGIC ===== */
 function buildFileTree(filesList, rootId) {
-  const nodeMap = {};
+  // Deduplicate filesList just in case
+  const uniqueFiles = [];
+  const seenIds = new Set();
   filesList.forEach(f => {
+    if (!seenIds.has(f.id)) {
+      seenIds.add(f.id);
+      uniqueFiles.push(f);
+    }
+  });
+
+  const nodeMap = {};
+  uniqueFiles.forEach(f => {
     nodeMap[f.id] = {
       ...f,
       children: [],
@@ -1424,10 +1451,13 @@ function buildFileTree(filesList, rootId) {
   };
   nodeMap[rootId] = rootNode;
   
-  filesList.forEach(f => {
+  uniqueFiles.forEach(f => {
     const node = nodeMap[f.id];
     if (node.parentId && nodeMap[node.parentId]) {
-      nodeMap[node.parentId].children.push(node);
+      // Check if already added to prevent duplicates
+      if (!nodeMap[node.parentId].children.some(c => c.id === node.id)) {
+        nodeMap[node.parentId].children.push(node);
+      }
     }
   });
   
