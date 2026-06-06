@@ -195,6 +195,37 @@
     border-color: var(--color-midnight-ink) !important;
   }
   
+  .root-drop-target {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    border-radius: var(--radius-cards);
+    border: 1px dashed transparent;
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-inter);
+    color: var(--color-driftwood);
+    cursor: default;
+    transition: all 0.2s ease;
+  }
+  
+  .root-drop-target.drag-over {
+    background-color: rgba(0, 0, 0, 0.06);
+    border-color: var(--color-midnight-ink);
+    color: var(--color-midnight-ink);
+  }
+  
+  .root-drop-target .root-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  
   .file-icon {
     width: 32px;
     height: 32px;
@@ -1784,10 +1815,15 @@ function renderFileList() {
     }).join('');
     return;
   }
-  const treeHtml = renderTree(fileTreeRoot, 0);
-  console.log('[SecureVault] renderTree output length:', treeHtml.length, 'first 200 chars:', treeHtml.substring(0, 200));
-  list.innerHTML = treeHtml;
-  console.log('[SecureVault] file-list childElementCount after render:', list.childElementCount);
+  const hasSubfolders = fileTreeRoot.children.some(c => c.isFolder);
+  const rootDropHtml = hasSubfolders ? `
+    <div class="root-drop-target" 
+         ondragover="event.preventDefault(); this.classList.add('drag-over')" 
+         ondragleave="this.classList.remove('drag-over')" 
+         ondrop="this.classList.remove('drag-over'); handleDrop(event, '${folderId}')">
+      <span class="root-icon">📂</span> SecureVault (최상위)
+    </div>` : '';
+  list.innerHTML = rootDropHtml + renderTree(fileTreeRoot, 0);
 }
 
 function showContent(html) {
