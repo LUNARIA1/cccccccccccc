@@ -5,162 +5,1083 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SecureVault — 암호화 파일 뷰어</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=Inter:wght@400;500;700&family=JetBrains+Mono&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
   :root {
-    --bg: #0d0d0d;
-    --surface: #161616;
-    --surface2: #1e1e1e;
-    --border: #2a2a2a;
-    --border2: #3a3a3a;
-    --accent: #00e5a0;
-    --accent-dim: rgba(0,229,160,0.12);
-    --accent-dim2: rgba(0,229,160,0.06);
-    --text: #e8e8e8;
-    --text2: #888;
-    --text3: #555;
-    --danger: #ff5555;
-    --warning: #ffaa33;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'Noto Sans KR', sans-serif;
-    --radius: 6px;
-    --radius2: 10px;
+    --color-parchment-white: #fdfcfc;
+    --color-warm-sand: #f5f3f1;
+    --color-ash-border: #e5e5e5;
+    --color-midnight-ink: #000000;
+    --color-driftwood: #777169;
+    --color-fog: #a59f97;
+    --color-silver-mist: #b1b0b0;
+    --color-void-violet: #0447ff;
+    --color-ember-orange: #ff4704;
+
+    --font-waldenburg: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-waldenburgfh: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    --font-inter: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-geist-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    --radius-tabs: 20px;
+    --radius-cards: 20px;
+    --radius-pills: 9999px;
+    --radius-badges: 18px;
+    --radius-inputs: 4px;
+    --radius-buttons: 9999px;
+    --radius-tooltips: 8px;
+    --radius-cardlarge: 24px;
+
+    --shadow-subtle: rgba(0, 0, 0, 0.075) 0px 0px 0px 0.5px inset;
+    --shadow-subtle-2: rgba(0, 0, 0, 0.06) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 1px 2px 0px, rgba(0, 0, 0, 0.04) 0px 2px 4px 0px;
+    --shadow-elevated: rgba(0, 0, 0, 0.4) 0px 0px 1px 0px, rgba(0, 0, 0, 0.04) 0px 1px 1px 0px, rgba(0, 0, 0, 0.04) 0px 2px 4px 0px;
+    --shadow-button-ring: rgba(0, 0, 0, 0.06) 0px 0px 0px 1px, rgba(0, 0, 0, 0.04) 0px 1px 2px 0px;
   }
+  
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; line-height: 1.6; min-height: 100vh; }
-  .app { display: flex; height: 100vh; overflow: hidden; }
-  .sidebar { width: 280px; min-width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .sidebar-header { padding: 20px 18px 16px; border-bottom: 1px solid var(--border); }
-  .logo { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--accent); margin-bottom: 12px; }
-  .logo-icon { width: 24px; height: 24px; border: 1.5px solid var(--accent); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; }
-  .auth-status { display: flex; align-items: center; gap: 6px; font-size: 11px; font-family: var(--mono); color: var(--text2); }
-  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); flex-shrink: 0; transition: background 0.3s; }
-  .dot.connected { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
-  .sidebar-nav { padding: 10px 8px; border-bottom: 1px solid var(--border); }
-  .nav-btn { width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: none; border: none; color: var(--text2); font-size: 12px; font-family: var(--sans); border-radius: var(--radius); cursor: pointer; transition: all 0.15s; text-align: left; }
-  .nav-btn:hover { background: var(--surface2); color: var(--text); }
-  .nav-btn .nb-icon { font-size: 15px; width: 18px; text-align: center; }
-  .file-list-header { padding: 12px 18px 6px; font-size: 10px; font-family: var(--mono); color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; }
-  .file-list { overflow-y: auto; flex: 1; padding: 4px 8px 8px; }
-  .file-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius); cursor: pointer; transition: background 0.12s; border: 1px solid transparent; }
-  .file-item:hover { background: var(--surface2); }
-  .file-item.selected { background: var(--accent-dim2); border-color: var(--accent-dim); }
-  .file-icon { width: 28px; height: 28px; border-radius: 4px; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; color: var(--text2); }
-  .file-icon.img { color: #a78bfa; background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.2); }
-  .file-icon.txt { color: #60a5fa; background: rgba(96,165,250,0.08); border-color: rgba(96,165,250,0.2); }
-  .file-icon.md  { color: var(--accent); background: var(--accent-dim2); border-color: rgba(0,229,160,0.2); }
-  .file-icon.enc { color: var(--text3); }
+  
+  body {
+    background: var(--color-parchment-white);
+    color: var(--color-midnight-ink);
+    font-family: var(--font-inter);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+  
+  .app {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--color-parchment-white);
+  }
+  
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: var(--color-warm-sand);
+    border-right: 1px solid var(--color-ash-border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--color-parchment-white);
+  }
+  
+  .sidebar-header {
+    padding: 24px 20px 18px;
+    border-bottom: 1px solid var(--color-ash-border);
+  }
+  
+  .logo {
+    display: flex;
+    align-items: center;
+    font-family: var(--font-waldenburgfh);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--color-midnight-ink);
+    margin-bottom: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  
+  .logo-bar {
+    font-weight: 700;
+    margin-right: 8px;
+    color: var(--color-midnight-ink);
+  }
+  
+  .auth-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-family: var(--font-inter);
+    color: var(--color-driftwood);
+  }
+  
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-fog);
+    flex-shrink: 0;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  
+  .dot.connected {
+    background: #10b981;
+    box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+  }
+  
+  .sidebar-nav {
+    padding: 16px;
+    border-bottom: 1px solid var(--color-ash-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .file-list-header {
+    padding: 16px 20px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: var(--font-inter);
+    color: var(--color-driftwood);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  
+  .file-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 4px 12px 12px;
+  }
+  
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-cards);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    margin-bottom: 4px;
+  }
+  
+  .file-item:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+  
+  .file-item.selected {
+    background: #ffffff;
+    border-color: var(--color-ash-border);
+    box-shadow: var(--shadow-button-ring);
+  }
+  
+  .file-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid var(--color-ash-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+    color: var(--color-driftwood);
+    transition: all 0.2s ease;
+  }
+  
+  .file-item.selected .file-icon {
+    border-color: var(--color-midnight-ink);
+  }
+  
   .file-meta { overflow: hidden; }
-  .file-name { font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .file-size { font-size: 10px; color: var(--text3); font-family: var(--mono); }
-  .toolbar { display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
-  .toolbar-title { font-size: 13px; font-family: var(--mono); color: var(--text); margin-right: auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
-  .toolbar-title .tb-path { color: var(--text3); }
-  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); color: var(--text); font-size: 12px; font-family: var(--sans); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
-  .btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim2); }
-  .btn.primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 500; }
-  .btn.primary:hover { background: #00ffb3; border-color: #00ffb3; }
-  .btn.danger { border-color: rgba(255,85,85,0.3); color: var(--danger); }
-  .btn.danger:hover { background: rgba(255,85,85,0.1); }
-  .btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
-  .content-area { flex: 1; overflow-y: auto; padding: 24px; position: relative; }
-  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 12px; color: var(--text3); font-family: var(--mono); font-size: 13px; }
-  .empty-icon { font-size: 36px; opacity: 0.4; }
-  .empty-hint { font-size: 11px; color: var(--text3); }
-  .img-viewer { text-align: center; }
-  .img-viewer img { max-width: 100%; max-height: calc(100vh - 160px); border-radius: var(--radius2); border: 1px solid var(--border); }
-  .text-viewer { max-width: 720px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius2); padding: 24px 28px; font-family: var(--mono); font-size: 13px; line-height: 1.8; color: var(--text); white-space: pre-wrap; word-break: break-word; }
-  .md-viewer { max-width: 720px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius2); padding: 28px 32px; }
-  .md-viewer h1, .md-viewer h2, .md-viewer h3 { color: var(--text); font-weight: 500; margin: 1.4em 0 0.6em; line-height: 1.3; }
-  .md-viewer h1 { font-size: 22px; }
-  .md-viewer h2 { font-size: 17px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-  .md-viewer h3 { font-size: 14px; color: var(--accent); }
-  .md-viewer p { margin-bottom: 1em; }
-  .md-viewer code { font-family: var(--mono); font-size: 12px; background: var(--surface2); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
-  .md-viewer pre { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; overflow-x: auto; margin-bottom: 1em; }
-  .md-viewer pre code { background: none; padding: 0; color: var(--text); }
-  .md-viewer blockquote { border-left: 2px solid var(--accent); padding-left: 14px; color: var(--text2); margin-bottom: 1em; }
-  .md-viewer ul, .md-viewer ol { padding-left: 1.4em; margin-bottom: 1em; }
-  .md-viewer li { margin-bottom: 4px; }
-  .md-viewer a { color: var(--accent); }
-  .md-viewer strong { font-weight: 500; }
-  .md-viewer table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 1em; }
-  .md-viewer th { border: 1px solid var(--border); padding: 6px 10px; background: var(--surface2); font-weight: 500; }
-  .md-viewer td { border: 1px solid var(--border); padding: 6px 10px; }
-  .modal-overlay { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; }
+  
+  .file-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-midnight-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .file-size {
+    font-size: 11px;
+    color: var(--color-driftwood);
+    font-family: var(--font-geist-mono);
+  }
+  
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--color-ash-border);
+    background: var(--color-parchment-white);
+    flex-shrink: 0;
+  }
+  
+  .toolbar-title {
+    font-family: var(--font-waldenburg);
+    font-size: 18px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    color: var(--color-midnight-ink);
+    margin-right: auto;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .toolbar-title .tb-path {
+    color: var(--color-driftwood);
+  }
+  
+  /* Buttons styling */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #ffffff;
+    border: 1px solid var(--color-ash-border);
+    border-radius: var(--radius-buttons);
+    color: var(--color-midnight-ink);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-inter);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    box-shadow: var(--shadow-button-ring);
+  }
+  
+  .btn:hover {
+    border-color: var(--color-midnight-ink);
+    background: var(--color-warm-sand);
+  }
+  
+  .btn.primary {
+    background: var(--color-midnight-ink);
+    border-color: var(--color-midnight-ink);
+    color: #ffffff;
+    box-shadow: none;
+  }
+  
+  .btn.primary:hover {
+    background: #222222;
+    border-color: #222222;
+  }
+  
+  .btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  
+  .btn-ghost {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: var(--color-driftwood);
+  }
+  
+  .btn-ghost:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--color-midnight-ink);
+  }
+  
+  /* Navigation Button Styling */
+  .nav-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #ffffff;
+    border: 1px solid var(--color-ash-border);
+    color: var(--color-midnight-ink);
+    font-size: 13px;
+    font-family: var(--font-inter);
+    font-weight: 500;
+    border-radius: var(--radius-buttons);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    box-shadow: var(--shadow-button-ring);
+  }
+  
+  .nav-btn:hover {
+    background: var(--color-warm-sand);
+    border-color: var(--color-midnight-ink);
+  }
+  
+  .nav-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none;
+  }
+  
+  .nav-btn.primary {
+    background: var(--color-midnight-ink);
+    border-color: var(--color-midnight-ink);
+    color: #ffffff;
+    box-shadow: none;
+  }
+  
+  .nav-btn.primary:hover {
+    background: #222222;
+    border-color: #222222;
+  }
+  
+  .nav-btn .nb-icon {
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Hamburger Menu Button */
+  .menu-btn {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--color-midnight-ink);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .menu-btn:hover {
+    background: var(--color-warm-sand);
+  }
+  
+  .content-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 24px;
+    position: relative;
+    background: var(--color-parchment-white);
+  }
+  
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 16px;
+    color: var(--color-driftwood);
+    font-family: var(--font-inter);
+    text-align: center;
+  }
+  
+  .empty-title {
+    font-family: var(--font-waldenburg);
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--color-midnight-ink);
+    letter-spacing: -0.02em;
+    margin-top: 8px;
+  }
+  
+  .empty-hint {
+    font-size: 13px;
+    color: var(--color-driftwood);
+    max-width: 320px;
+    line-height: 1.5;
+  }
+  
+  /* Ambient Voice Orb */
+  .ambient-orb {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--color-void-violet) 0%, var(--color-ember-orange) 100%);
+    filter: blur(16px);
+    opacity: 0.75;
+    animation: pulse 6s ease-in-out infinite alternate;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1) rotate(0deg); opacity: 0.7; }
+    50% { transform: scale(1.1) rotate(180deg); opacity: 0.85; }
+    100% { transform: scale(0.9) rotate(360deg); opacity: 0.7; }
+  }
+  
+  /* Viewer styles */
+  .viewer-card {
+    background: #ffffff;
+    border-radius: var(--radius-cards);
+    padding: 32px;
+    box-shadow: var(--shadow-elevated);
+    max-width: 760px;
+    margin: 0 auto;
+    position: relative;
+    border: 1px solid var(--color-ash-border);
+  }
+  
+  .img-viewer {
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  
+  .img-viewer img {
+    max-width: 100%;
+    max-height: calc(100vh - 200px);
+    border-radius: var(--radius-cards);
+    border: 1px solid var(--color-ash-border);
+    box-shadow: var(--shadow-elevated);
+  }
+  
+  .text-viewer {
+    font-family: var(--font-geist-mono);
+    font-size: 13px;
+    line-height: 1.69;
+    color: var(--color-midnight-ink);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  
+  .text-viewer pre {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
+  }
+  
+  /* Copy Button styling */
+  .copy-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: #ffffff;
+    border: 1px solid var(--color-ash-border);
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--color-driftwood);
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-button-ring);
+    z-index: 10;
+  }
+  
+  .copy-btn:hover {
+    color: var(--color-midnight-ink);
+    border-color: var(--color-midnight-ink);
+    background: var(--color-warm-sand);
+  }
+  
+  /* Markdown style details */
+  .md-viewer {
+    color: var(--color-midnight-ink);
+    line-height: 1.6;
+    font-family: var(--font-inter);
+    font-size: 15px;
+  }
+  
+  .md-viewer h1, .md-viewer h2, .md-viewer h3, .md-viewer h4 {
+    font-family: var(--font-waldenburg);
+    color: var(--color-midnight-ink);
+    font-weight: 300;
+    margin: 1.5em 0 0.6em;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+  
+  .md-viewer h1 { font-size: 28px; margin-top: 0.5em; }
+  .md-viewer h2 { font-size: 22px; border-bottom: 1px solid var(--color-ash-border); padding-bottom: 8px; }
+  .md-viewer h3 { font-size: 18px; }
+  .md-viewer p { margin-bottom: 1.2em; }
+  
+  .md-viewer code {
+    font-family: var(--font-geist-mono);
+    font-size: 13px;
+    background: var(--color-warm-sand);
+    padding: 2px 6px;
+    border-radius: var(--radius-inputs);
+    color: var(--color-midnight-ink);
+    border: 1px solid var(--color-ash-border);
+  }
+  
+  .md-viewer pre {
+    background: var(--color-warm-sand);
+    border: 1px solid var(--color-ash-border);
+    border-radius: var(--radius-cards);
+    padding: 16px;
+    overflow-x: auto;
+    margin-bottom: 1.2em;
+  }
+  
+  .md-viewer pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--color-midnight-ink);
+  }
+  
+  .md-viewer blockquote {
+    border-left: 2px solid var(--color-midnight-ink);
+    padding-left: 16px;
+    color: var(--color-driftwood);
+    margin: 1.5em 0;
+    font-style: italic;
+  }
+  
+  .md-viewer ul, .md-viewer ol {
+    padding-left: 1.5em;
+    margin-bottom: 1.2em;
+  }
+  
+  .md-viewer li {
+    margin-bottom: 6px;
+  }
+  
+  .md-viewer a {
+    color: var(--color-midnight-ink);
+    text-decoration: underline;
+    font-weight: 500;
+  }
+  .md-viewer a:hover {
+    color: var(--color-driftwood);
+  }
+  
+  .md-viewer strong { font-weight: 600; }
+  
+  .md-viewer table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 1.2em;
+  }
+  
+  .md-viewer th {
+    border: 1px solid var(--color-ash-border);
+    padding: 8px 12px;
+    background: var(--color-warm-sand);
+    font-weight: 600;
+    text-align: left;
+  }
+  
+  .md-viewer td {
+    border: 1px solid var(--color-ash-border);
+    padding: 8px 12px;
+  }
+  
+  /* Modals */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+  }
+  
   .modal-overlay.hidden { display: none; }
-  .modal { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius2); width: 460px; max-width: 90vw; overflow: hidden; }
-  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
-  .modal-header h3 { font-size: 14px; font-weight: 500; }
-  .modal-close { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 18px; line-height: 1; }
-  .modal-body { padding: 20px; }
-  .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
-  .field-label { font-size: 11px; font-family: var(--mono); color: var(--text2); display: block; margin-bottom: 6px; letter-spacing: 0.04em; }
-  .field-label .req { color: var(--accent); margin-left: 2px; }
-  .key-input { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 8px 12px; color: var(--text); font-family: var(--mono); font-size: 13px; outline: none; transition: border 0.15s; margin-bottom: 14px; }
-  .key-input:focus { border-color: var(--accent); }
-  .upload-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius2); padding: 28px 20px; text-align: center; color: var(--text2); transition: all 0.15s; margin-bottom: 14px; position: relative; }
-  .upload-zone.drag, .upload-zone:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim2); }
-  .upload-zone .uz-icon { font-size: 26px; margin-bottom: 6px; }
-  .upload-zone p { font-size: 12px; }
-  .upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-  .selected-info { font-size: 12px; font-family: var(--mono); color: var(--text2); margin-bottom: 12px; padding: 8px 12px; background: var(--surface2); border-radius: var(--radius); display: none; }
-  .error-msg { font-size: 11px; color: var(--danger); font-family: var(--mono); margin-top: -8px; margin-bottom: 8px; display: none; }
-  .pw-notice { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: var(--accent-dim2); border: 1px solid rgba(0,229,160,0.2); border-radius: var(--radius); font-size: 11px; color: var(--accent); font-family: var(--mono); margin-bottom: 4px; }
-  .pw-warning { display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: rgba(255,170,51,0.08); border: 1px solid rgba(255,170,51,0.25); border-radius: var(--radius); font-size: 11px; color: var(--warning); font-family: var(--mono); margin-bottom: 4px; }
-  .settings-section { margin-bottom: 20px; }
-  .settings-section-title { font-size: 10px; font-family: var(--mono); color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-  .divider { height: 1px; background: var(--border); margin: 16px 0; }
-  .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
-  .toast { background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 10px 14px; font-size: 12px; font-family: var(--mono); animation: toastIn 0.2s ease; min-width: 200px; }
-  .toast.success { border-left: 2px solid var(--accent); }
-  .toast.error { border-left: 2px solid var(--danger); }
-  @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-  .spinner { width: 18px; height: 18px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
+  
+  .modal {
+    background: #ffffff;
+    border: 1px solid var(--color-ash-border);
+    border-radius: var(--radius-cards);
+    width: 480px;
+    max-width: 90vw;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+  
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--color-ash-border);
+  }
+  
+  .modal-header h3 {
+    font-family: var(--font-inter);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-midnight-ink);
+  }
+  
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--color-driftwood);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .modal-close:hover {
+    background: var(--color-warm-sand);
+    color: var(--color-midnight-ink);
+  }
+  
+  .modal-body {
+    padding: 24px;
+  }
+  
+  .modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--color-ash-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    background: var(--color-parchment-white);
+  }
+  
+  /* Inputs */
+  .field-label {
+    font-size: 12px;
+    font-weight: 500;
+    font-family: var(--font-inter);
+    color: var(--color-driftwood);
+    display: block;
+    margin-bottom: 6px;
+  }
+  
+  .field-label .req {
+    color: #ef4444;
+    margin-left: 2px;
+  }
+  
+  .key-input, .text-upload-textarea {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid var(--color-ash-border);
+    border-radius: var(--radius-inputs);
+    padding: 10px 14px;
+    color: var(--color-midnight-ink);
+    font-family: var(--font-inter);
+    font-size: 13px;
+    outline: none;
+    transition: border 0.15s, box-shadow 0.15s;
+    margin-bottom: 16px;
+  }
+  
+  .key-input:focus, .text-upload-textarea:focus {
+    border-color: var(--color-midnight-ink);
+  }
+  
+  .key-input[type=password] {
+    font-family: password, var(--font-inter);
+  }
+  
+  .key-input::placeholder, .text-upload-textarea::placeholder {
+    color: var(--color-fog);
+  }
+  
+  /* Textarea for Text Upload */
+  .text-upload-textarea {
+    min-height: 200px;
+    resize: vertical;
+    font-family: var(--font-geist-mono);
+    line-height: 1.5;
+  }
+  
+  /* Tab Switcher inside Modal */
+  .tab-switcher {
+    background: var(--color-warm-sand);
+    border-radius: var(--radius-tabs);
+    padding: 4px;
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+  }
+  
+  .tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-driftwood);
+    font-family: var(--font-inter);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: var(--radius-badges);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+  
+  .tab-btn.active {
+    background: #ffffff;
+    color: var(--color-midnight-ink);
+    box-shadow: var(--shadow-subtle);
+  }
+  
+  .upload-zone {
+    border: 1.5px dashed var(--color-ash-border);
+    border-radius: var(--radius-cards);
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--color-driftwood);
+    transition: all 0.2s ease;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  
+  .upload-zone.drag, .upload-zone:hover {
+    border-color: var(--color-midnight-ink);
+    background: rgba(0, 0, 0, 0.02);
+  }
+  
+  .upload-zone .uz-icon {
+    font-size: 28px;
+    margin-bottom: 8px;
+    color: var(--color-driftwood);
+  }
+  
+  .upload-zone p {
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  
+  .upload-zone input[type=file] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+  
+  .selected-info {
+    font-size: 12px;
+    font-family: var(--font-geist-mono);
+    color: var(--color-driftwood);
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background: var(--color-warm-sand);
+    border-radius: var(--radius-inputs);
+    display: none;
+  }
+  
+  .error-msg {
+    font-size: 12px;
+    color: #ef4444;
+    font-family: var(--font-inter);
+    margin-top: -8px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  
+  /* Notice Banners */
+  .pw-notice, .pw-warning {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: var(--radius-inputs);
+    font-size: 12px;
+    font-family: var(--font-inter);
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+  
+  .pw-notice {
+    background: var(--color-warm-sand);
+    border: 1px solid var(--color-ash-border);
+    color: var(--color-midnight-ink);
+  }
+  
+  .pw-warning {
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+  }
+  
+  .settings-section {
+    margin-bottom: 24px;
+  }
+  
+  .settings-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font-inter);
+    color: var(--color-driftwood);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--color-ash-border);
+  }
+  
+  /* Toast */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .toast {
+    background: #ffffff;
+    border: 1px solid var(--color-ash-border);
+    border-radius: 9999px;
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font-inter);
+    color: var(--color-midnight-ink);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: toastIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    min-width: 240px;
+  }
+  
+  .toast.success::before {
+    content: "✓";
+    color: #10b981;
+    font-weight: 700;
+  }
+  
+  .toast.error::before {
+    content: "✕";
+    color: #ef4444;
+    font-weight: 700;
+  }
+  
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+  }
+  
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-silver-mist);
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-fog);
+  }
+  
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--color-ash-border);
+    border-top-color: var(--color-midnight-ink);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+  
   @keyframes spin { to { transform: rotate(360deg); } }
-  .tag { font-size: 10px; font-family: var(--mono); padding: 1px 6px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); color: var(--text3); }
-  .tag.enc { color: var(--warning); border-color: rgba(255,170,51,0.2); background: rgba(255,170,51,0.06); }
-  .tag.dec { color: var(--accent); border-color: rgba(0,229,160,0.2); background: var(--accent-dim2); }
+  
+  .tag {
+    font-size: 10px;
+    font-weight: 600;
+    font-family: var(--font-inter);
+    padding: 2px 8px;
+    border-radius: 9999px;
+    background: var(--color-warm-sand);
+    border: 1px solid var(--color-ash-border);
+    color: var(--color-driftwood);
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    margin-left: 6px;
+  }
+  
+  .tag.enc {
+    color: var(--color-driftwood);
+  }
+  
+  .tag.dec {
+    color: var(--color-midnight-ink);
+    border-color: var(--color-midnight-ink);
+    background: #ffffff;
+  }
+  
+  /* Mobile Responsiveness queries */
+  @media (max-width: 768px) {
+    .menu-btn {
+      display: flex;
+    }
+    
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      z-index: 1000;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.1);
+    }
+    
+    body.sidebar-open .sidebar {
+      transform: translateX(0);
+    }
+    
+    .sidebar-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(2px);
+      z-index: 999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    
+    body.sidebar-open .sidebar-backdrop {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    .toolbar {
+      padding: 12px 16px;
+    }
+    
+    .toolbar-title {
+      font-size: 16px;
+    }
+    
+    /* Icon-only buttons on mobile */
+    .btn .btn-text {
+      display: none;
+    }
+    
+    .btn {
+      padding: 8px;
+      width: 36px;
+      height: 36px;
+      justify-content: center;
+    }
+    
+    .content-area {
+      padding: 16px;
+    }
+    
+    .viewer-card {
+      padding: 20px;
+    }
+    
+    .md-viewer {
+      font-size: 14px;
+    }
+    
+    .md-viewer h1 { font-size: 22px; }
+    .md-viewer h2 { font-size: 18px; }
+    .md-viewer h3 { font-size: 15px; }
+  }
 </style>
 </head>
 <body>
 <div class="app">
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
   <aside class="sidebar">
     <div class="sidebar-header">
-      <div class="logo"><div class="logo-icon">🔐</div>SecureVault</div>
+      <div class="logo"><span class="logo-bar">||</span>SecureVault</div>
       <div class="auth-status">
         <div class="dot" id="gdot"></div>
         <span id="gstatus">Google Drive 연결 안됨</span>
       </div>
     </div>
     <nav class="sidebar-nav">
-      <button class="nav-btn" id="btn-connect-gdrive"><span class="nb-icon">☁</span> Drive 연결</button>
-      <button class="nav-btn" id="btn-upload" disabled><span class="nb-icon">↑</span> 암호화 & 업로드</button>
-      <button class="nav-btn" id="btn-refresh" disabled><span class="nb-icon">↻</span> 새로고침</button>
+      <button class="nav-btn primary" id="btn-connect-gdrive">
+        <span class="nb-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+          </svg>
+        </span>
+        Drive 연결
+      </button>
+      <button class="nav-btn" id="btn-upload" disabled>
+        <span class="nb-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+        </span>
+        암호화 & 업로드
+      </button>
+      <button class="nav-btn" id="btn-refresh" disabled>
+        <span class="nb-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 4v6h-6"></path>
+            <path d="M1 20v-6h6"></path>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+        </span>
+        새로고침
+      </button>
     </nav>
     <div class="file-list-header">파일 목록</div>
     <div class="file-list" id="file-list">
-      <div style="padding:20px 10px;text-align:center;color:var(--text3);font-size:11px;font-family:var(--mono)">Drive 연결 후 파일을 불러옵니다</div>
+      <div style="padding:24px 12px;text-align:center;color:var(--color-driftwood);font-size:12px;font-family:var(--font-inter)">Drive 연결 후 파일을 불러옵니다</div>
     </div>
   </aside>
 
   <main class="main">
     <div class="toolbar">
+      <button class="menu-btn" id="menu-btn" aria-label="메뉴 열기">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="3" y1="12" x2="21" y2="12"></line>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+      </button>
       <div class="toolbar-title" id="toolbar-title"><span class="tb-path">securevault /</span> 파일을 선택하세요</div>
-      <button class="btn" id="btn-download" disabled>↓ 다운로드</button>
-      <button class="btn danger" id="btn-delete" disabled>🗑 삭제</button>
-      <button class="btn" id="btn-settings">⚙ 설정</button>
+      <button class="btn" id="btn-download" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span class="btn-text">다운로드</span>
+      </button>
+      <button class="btn" id="btn-delete" disabled>
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <line x1="10" y1="11" x2="10" y2="17"></line>
+          <line x1="14" y1="11" x2="14" y2="17"></line>
+        </svg>
+        <span class="btn-text">삭제</span>
+      </button>
+      <button class="btn" id="btn-settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        <span class="btn-text">설정</span>
+      </button>
     </div>
     <div class="content-area" id="content-area">
       <div class="empty-state" id="empty-state">
-        <div class="empty-icon">🔒</div>
-        <div>암호화된 파일 저장소</div>
-        <div class="empty-hint">설정에서 마스터 비밀번호를 먼저 등록하세요</div>
+        <div class="ambient-orb"></div>
+        <div class="empty-title">SecureVault</div>
+        <div class="empty-hint">안전한 파일 암호화 저장소입니다.<br>설정에서 마스터 비밀번호를 먼저 등록하세요.</div>
       </div>
     </div>
   </main>
@@ -170,19 +1091,35 @@
 <div class="modal-overlay hidden" id="upload-modal">
   <div class="modal">
     <div class="modal-header">
-      <h3>🔐 암호화 & 업로드</h3>
+      <h3>암호화 & 업로드</h3>
       <button class="modal-close" id="upload-modal-close">✕</button>
     </div>
     <div class="modal-body">
-      <div id="upload-pw-notice" class="pw-notice">🔑 마스터 비밀번호로 자동 암호화됩니다</div>
-      <div id="upload-pw-warning" class="pw-warning" style="display:none">⚠ 설정에서 마스터 비밀번호를 먼저 등록하세요</div>
-      <div style="height:14px"></div>
+      <div id="upload-pw-notice" class="pw-notice">마스터 비밀번호로 자동 암호화됩니다</div>
+      <div id="upload-pw-warning" class="pw-warning" style="display:none">설정에서 마스터 비밀번호를 먼저 등록하세요</div>
+      
+      <!-- Tab Switcher -->
+      <div class="tab-switcher">
+        <button class="tab-btn active" id="tab-file-upload">파일 업로드</button>
+        <button class="tab-btn" id="tab-text-upload">텍스트 파일로 업로드</button>
+      </div>
+
+      <!-- File Upload Zone -->
       <div class="upload-zone" id="upload-zone">
         <div class="uz-icon">📁</div>
         <p>클릭하거나 파일을 드래그하세요</p>
-        <p style="font-size:11px;color:var(--text3);margin-top:4px">이미지, 텍스트, 마크다운 지원</p>
+        <p style="font-size:11px;color:var(--color-driftwood);margin-top:4px">이미지, 텍스트, 마크다운 지원</p>
         <input type="file" id="upload-file-input" accept="image/*,.txt,.md,.markdown">
       </div>
+
+      <!-- Text Upload Container -->
+      <div id="text-upload-container" style="display:none;">
+        <label class="field-label">파일 이름 <span class="req">*</span></label>
+        <input type="text" class="key-input" id="text-upload-filename" placeholder="memo (자동으로 .md가 붙습니다)">
+        <label class="field-label">텍스트 내용 <span class="req">*</span></label>
+        <textarea class="text-upload-textarea" id="text-upload-content" placeholder="이곳에 저장할 텍스트 내용을 입력하세요..."></textarea>
+      </div>
+
       <div class="selected-info" id="selected-file-info"></div>
       <div class="error-msg" id="upload-error"></div>
     </div>
@@ -197,7 +1134,7 @@
 <div class="modal-overlay hidden" id="settings-modal">
   <div class="modal">
     <div class="modal-header">
-      <h3>⚙ 설정</h3>
+      <h3>설정</h3>
       <button class="modal-close" id="settings-modal-close">✕</button>
     </div>
     <div class="modal-body">
@@ -210,17 +1147,17 @@
       </div>
       <div class="settings-section">
         <div class="settings-section-title">마스터 비밀번호</div>
-        <p style="font-size:11px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+        <p style="font-size:11px;color:var(--color-driftwood);margin-bottom:12px;line-height:1.6">
           모든 파일을 이 비밀번호로 암호화/복호화합니다.<br>
           비밀번호는 이 기기의 브라우저에만 저장되며 서버에 전송되지 않습니다.<br>
-          <span style="color:var(--danger)">잊어버리면 기존 파일을 복호화할 수 없으니 주의하세요.</span>
+          <span style="color:#ef4444; font-weight:500;">잊어버리면 기존 파일을 복호화할 수 없으니 주의하세요.</span>
         </p>
         <label class="field-label">새 비밀번호</label>
         <input type="password" class="key-input" id="settings-password" placeholder="마스터 비밀번호 입력">
         <label class="field-label">비밀번호 확인</label>
         <input type="password" class="key-input" id="settings-password-confirm" placeholder="다시 입력">
         <div class="error-msg" id="settings-pw-error"></div>
-        <div id="settings-pw-status" style="font-size:11px;font-family:var(--mono);color:var(--text3)"></div>
+        <div id="settings-pw-status" style="font-size:11px;font-family:var(--font-geist-mono);color:var(--color-driftwood)"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -236,13 +1173,13 @@
 /* ===== CONFIG ===== */
 let CLIENT_ID = localStorage.getItem('sv_client_id') || '';
 let FOLDER_NAME = localStorage.getItem('sv_folder') || 'SecureVault';
-// 마스터 비밀번호: 세션(메모리)에만 보관. localStorage엔 절대 저장 안 함.
 let MASTER_PASSWORD = localStorage.getItem('sv_master_pw') || '';
 const ENC_EXT = '.svenc';
 
 /* ===== STATE ===== */
 let tokenClient = null, accessToken = null, folderId = null;
 let files = [], selectedFile = null;
+let currentDecryptedText = '';
 
 /* ===== CRYPTO ===== */
 async function deriveKey(password, salt) {
@@ -280,7 +1217,7 @@ async function decryptData(buffer, password) {
 
 /* ===== GOOGLE DRIVE ===== */
 function initGapi() {
-  if (!CLIENT_ID) { toast('먼저 ⚙ 설정에서 Client ID를 입력하세요', 'error'); return; }
+  if (!CLIENT_ID) { toast('먼저 설정에서 Client ID를 입력하세요', 'error'); return; }
   const s = document.createElement('script');
   s.src = 'https://accounts.google.com/gsi/client';
   s.onload = () => {
@@ -365,19 +1302,26 @@ function formatSize(b) {
   if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
   return (b/1048576).toFixed(1) + ' MB';
 }
-const FILE_ICONS = { img:'🖼', md:'📝', txt:'📄', enc:'🔒' };
+
+const FILE_ICONS = {
+  img: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`,
+  md: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
+  txt: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
+  enc: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`
+};
 
 function renderFileList() {
   const list = document.getElementById('file-list');
   if (!files.length) {
-    list.innerHTML = '<div style="padding:20px 10px;text-align:center;color:var(--text3);font-size:11px;font-family:var(--mono)">암호화된 파일 없음</div>';
+    list.innerHTML = '<div style="padding:24px 12px;text-align:center;color:var(--color-driftwood);font-size:12px;font-family:var(--font-inter)">암호화된 파일 없음</div>';
     return;
   }
   list.innerHTML = files.map(f => {
     const orig = getOrigName(f.name), type = getFileType(orig);
     const sel = selectedFile && selectedFile.id === f.id;
+    const iconSvg = FILE_ICONS[type] || FILE_ICONS['enc'];
     return `<div class="file-item${sel?' selected':''}" onclick="selectFile('${f.id}')">
-      <div class="file-icon ${type}">${FILE_ICONS[type]||'📄'}</div>
+      <div class="file-icon ${type}">${iconSvg}</div>
       <div class="file-meta">
         <div class="file-name" title="${orig}">${orig}</div>
         <div class="file-size">${formatSize(f.size)}</div>
@@ -400,7 +1344,7 @@ function selectFile(id) {
   document.getElementById('toolbar-title').innerHTML =
     `<span class="tb-path">securevault /</span> ${orig} <span class="tag enc">암호화됨</span>`;
   if (!MASTER_PASSWORD) {
-    toast('⚙ 설정에서 마스터 비밀번호를 먼저 등록하세요', 'error');
+    toast('설정에서 마스터 비밀번호를 먼저 등록하세요', 'error');
     return;
   }
   openFile(id);
@@ -411,24 +1355,53 @@ async function openFile(fileId) {
   const file = files.find(f => f.id === fileId);
   if (!file) return;
   const orig = getOrigName(file.name), type = getFileType(orig);
-  showContent('<div class="empty-state"><div class="spinner"></div><div style="font-size:12px;color:var(--text3)">복호화 중...</div></div>');
+  showContent('<div class="empty-state"><div class="spinner"></div><div style="font-size:12px;color:var(--color-driftwood)">복호화 중...</div></div>');
   try {
     const enc = await downloadFile(fileId);
     const dec = await decryptData(enc, MASTER_PASSWORD);
     document.getElementById('toolbar-title').innerHTML =
       `<span class="tb-path">securevault /</span> ${orig} <span class="tag dec">복호화됨</span>`;
+    
     if (type === 'img') {
+      currentDecryptedText = '';
       const url = URL.createObjectURL(new Blob([dec]));
       showContent(`<div class="img-viewer"><img src="${url}" alt="${orig}"></div>`);
-    } else if (type === 'md') {
-      showContent(`<div class="md-viewer">${marked.parse(new TextDecoder().decode(dec))}</div>`);
     } else {
-      showContent(`<div class="text-viewer">${escHtml(new TextDecoder().decode(dec))}</div>`);
+      currentDecryptedText = new TextDecoder().decode(dec);
+      const copyBtnHtml = `
+        <button class="copy-btn" onclick="copyCurrentText()" title="복사하기">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      `;
+      if (type === 'md') {
+        showContent(`<div class="md-viewer viewer-card">${copyBtnHtml}${marked.parse(currentDecryptedText)}</div>`);
+      } else {
+        showContent(`<div class="text-viewer viewer-card">${copyBtnHtml}<pre><code>${escHtml(currentDecryptedText)}</code></pre></div>`);
+      }
     }
+    
+    // Close sidebar drawer on mobile after selecting file
+    if (window.innerWidth <= 768) {
+      document.body.classList.remove('sidebar-open');
+    }
+    
     toast('복호화 완료: ' + orig, 'success');
   } catch(e) {
     toast(e.message, 'error');
     showContent(`<div class="empty-state"><div class="empty-icon">⚠</div><div>${e.message}</div></div>`);
+  }
+}
+
+async function copyCurrentText() {
+  if (!currentDecryptedText) return;
+  try {
+    await navigator.clipboard.writeText(currentDecryptedText);
+    toast('클립보드에 복사되었습니다', 'success');
+  } catch (err) {
+    toast('복사에 실패했습니다', 'error');
   }
 }
 
@@ -438,12 +1411,21 @@ function escHtml(s) {
 
 /* ===== UPLOAD ===== */
 let uploadFileData = null;
+let uploadTabMode = 'file';
 
 document.getElementById('btn-upload').onclick = () => {
   uploadFileData = null;
   document.getElementById('selected-file-info').style.display = 'none';
   document.getElementById('upload-error').style.display = 'none';
   document.getElementById('upload-file-input').value = '';
+  
+  // Reset text upload fields
+  document.getElementById('text-upload-filename').value = '';
+  document.getElementById('text-upload-content').value = '';
+  
+  // Set default tab to file mode
+  document.getElementById('tab-file-upload').click();
+  
   const hasPw = !!MASTER_PASSWORD;
   document.getElementById('upload-pw-notice').style.display = hasPw ? '' : 'none';
   document.getElementById('upload-pw-warning').style.display = hasPw ? 'none' : '';
@@ -470,16 +1452,49 @@ function handleFileSelect(file) {
 }
 
 document.getElementById('upload-confirm').onclick = async () => {
-  if (!uploadFileData) { showError('upload-error', '파일을 선택하세요'); return; }
   if (!MASTER_PASSWORD) { showError('upload-error', '설정에서 마스터 비밀번호를 먼저 등록하세요'); return; }
+  
   const btn = document.getElementById('upload-confirm');
   btn.disabled = true; btn.textContent = '암호화 중...';
   try {
-    const buf = await uploadFileData.arrayBuffer();
+    let buf, filename;
+    if (uploadTabMode === 'file') {
+      if (!uploadFileData) { showError('upload-error', '파일을 선택하세요'); btn.disabled = false; btn.textContent = '🔐 암호화 & 업로드'; return; }
+      buf = await uploadFileData.arrayBuffer();
+      filename = uploadFileData.name;
+    } else {
+      let name = document.getElementById('text-upload-filename').value.trim();
+      const text = document.getElementById('text-upload-content').value;
+      if (!text) { showError('upload-error', '텍스트 내용을 입력하세요'); btn.disabled = false; btn.textContent = '🔐 암호화 & 업로드'; return; }
+      
+      if (!name) {
+        const now = new Date();
+        const ts = now.getFullYear() +
+                   String(now.getMonth()+1).padStart(2,'0') +
+                   String(now.getDate()).padStart(2,'0') + '_' +
+                   String(now.getHours()).padStart(2,'0') +
+                   String(now.getMinutes()).padStart(2,'0');
+        name = `memo_${ts}`;
+      }
+      if (!name.endsWith('.md')) {
+        name += '.md';
+      }
+      filename = name;
+      const encoder = new TextEncoder();
+      buf = encoder.encode(text).buffer;
+    }
+    
     const enc = await encryptData(buf, MASTER_PASSWORD);
-    await uploadEncrypted(enc, uploadFileData.name + ENC_EXT);
+    await uploadEncrypted(enc, filename + ENC_EXT);
     document.getElementById('upload-modal').classList.add('hidden');
-    toast(uploadFileData.name + ' 암호화 & 업로드 완료', 'success');
+    toast(filename + ' 암호화 & 업로드 완료', 'success');
+    
+    // Reset text inputs
+    document.getElementById('text-upload-filename').value = '';
+    document.getElementById('text-upload-content').value = '';
+    uploadFileData = null;
+    document.getElementById('selected-file-info').style.display = 'none';
+    
     await loadFiles();
   } catch(e) {
     showError('upload-error', e.message);
@@ -502,7 +1517,13 @@ document.getElementById('btn-delete').onclick = async () => {
     document.getElementById('btn-download').disabled = true;
     document.getElementById('btn-delete').disabled = true;
     document.getElementById('toolbar-title').innerHTML = '<span class="tb-path">securevault /</span> 파일을 선택하세요';
-    showContent('<div class="empty-state"><div class="empty-icon">🔒</div><div>암호화된 파일 저장소</div></div>');
+    showContent(`
+      <div class="empty-state" id="empty-state">
+        <div class="ambient-orb"></div>
+        <div class="empty-title">SecureVault</div>
+        <div class="empty-hint">안전한 파일 암호화 저장소입니다.<br>설정에서 마스터 비밀번호를 먼저 등록하세요.</div>
+      </div>
+    `);
     toast(name + ' 삭제됨', 'success');
     await loadFiles();
   } catch(e) { toast('삭제 실패: ' + e.message, 'error'); }
@@ -564,8 +1585,9 @@ document.getElementById('btn-refresh').onclick = () => loadFiles();
 /* ===== UTILS ===== */
 function showError(id, msg) {
   const el = document.getElementById(id);
-  el.textContent = '⚠ ' + msg; el.style.display = 'block';
+  el.textContent = msg; el.style.display = 'block';
 }
+
 function toast(msg, type = 'success') {
   const c = document.getElementById('toast-container');
   const t = document.createElement('div');
@@ -573,15 +1595,66 @@ function toast(msg, type = 'success') {
   c.appendChild(t); setTimeout(() => t.remove(), 3200);
 }
 
+/* ===== TAB TOGGLE & MOBILE INIT ===== */
+function initUploadTabs() {
+  const tabFile = document.getElementById('tab-file-upload');
+  const tabText = document.getElementById('tab-text-upload');
+  const zone = document.getElementById('upload-zone');
+  const container = document.getElementById('text-upload-container');
+  const selectedInfo = document.getElementById('selected-file-info');
+  
+  if (tabFile && tabText) {
+    tabFile.onclick = () => {
+      uploadTabMode = 'file';
+      tabFile.classList.add('active');
+      tabText.classList.remove('active');
+      zone.style.display = 'block';
+      selectedInfo.style.display = uploadFileData ? 'block' : 'none';
+      container.style.display = 'none';
+      document.getElementById('upload-error').style.display = 'none';
+    };
+    
+    tabText.onclick = () => {
+      uploadTabMode = 'text';
+      tabFile.classList.remove('active');
+      tabText.classList.add('active');
+      zone.style.display = 'none';
+      selectedInfo.style.display = 'none';
+      container.style.display = 'block';
+      document.getElementById('upload-error').style.display = 'none';
+    };
+  }
+}
+
+function initMobileMenu() {
+  const menuBtn = document.getElementById('menu-btn');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  
+  if (menuBtn) {
+    menuBtn.onclick = () => {
+      document.body.classList.toggle('sidebar-open');
+    };
+  }
+  
+  if (backdrop) {
+    backdrop.onclick = () => {
+      document.body.classList.remove('sidebar-open');
+    };
+  }
+}
+
 /* ===== INIT ===== */
 window.addEventListener('load', () => {
+  initUploadTabs();
+  initMobileMenu();
+  
   if (!CLIENT_ID) {
     setTimeout(() => {
       document.getElementById('settings-modal').classList.remove('hidden');
       toast('Client ID와 마스터 비밀번호를 설정하세요', 'error');
     }, 400);
   } else if (!MASTER_PASSWORD) {
-    setTimeout(() => toast('⚙ 설정에서 마스터 비밀번호를 등록하세요', 'error'), 400);
+    setTimeout(() => toast('설정에서 마스터 비밀번호를 등록하세요', 'error'), 400);
   }
 });
 </script>
