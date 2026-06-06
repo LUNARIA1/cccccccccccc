@@ -1369,10 +1369,12 @@ async function loadFiles() {
       scannedFolderIds.add(currentFolderId);
       
       const q = `'${currentFolderId}' in parents and trashed=false`;
-      const r = await driveReq(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,size,mimeType,parents,modifiedTime)&orderBy=modifiedTime desc`);
+      const r = await driveReq(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,size,mimeType,modifiedTime)&orderBy=modifiedTime desc`);
       const filesInFolder = (await r.json()).files || [];
       
       filesInFolder.forEach(f => {
+        // Manually set parents since drive.file scope may not return it
+        f.parents = [currentFolderId];
         allFiles.push(f);
         if (f.mimeType === 'application/vnd.google-apps.folder') {
           foldersToScan.push(f.id);
@@ -1381,8 +1383,9 @@ async function loadFiles() {
     }
     
     files = allFiles;
+    console.log('[SecureVault] loadFiles: fetched', allFiles.length, 'files from Drive');
     fileTreeRoot = buildFileTree(files, folderId);
-    
+    console.log('[SecureVault] buildFileTree: root children count =', fileTreeRoot ? fileTreeRoot.children.length : 'null root');
     renderFileList();
     populateFolderSelects();
     
@@ -1739,8 +1742,27 @@ function renderTree(node, depth = 0) {
 
 function renderFileList() {
   const list = document.getElementById('file-list');
-  if (!files.length || !fileTreeRoot || !fileTreeRoot.children || !fileTreeRoot.children.length) {
+  if (!files.length) {
     list.innerHTML = '<div style="padding:24px 12px;text-align:center;color:var(--color-driftwood);font-size:12px;font-family:var(--font-inter)">암호화된 파일 없음</div>';
+    return;
+  }
+  // Rebuild tree if missing
+  if (!fileTreeRoot && folderId) {
+    fileTreeRoot = buildFileTree(files, folderId);
+  }
+  if (!fileTreeRoot || !fileTreeRoot.children || !fileTreeRoot.children.length) {
+    // Fallback: render flat list if tree fails
+    console.warn('[SecureVault] Tree build produced empty children. files:', files.length, 'fileTreeRoot:', fileTreeRoot);
+    list.innerHTML = files.filter(f => f.mimeType !== 'application/vnd.google-apps.folder').map(f => {
+      const orig = getOrigName(f.name);
+      const type = getFileType(orig);
+      const icon = FILE_ICONS[type] || FILE_ICONS.default;
+      const sel = selectedFile && selectedFile.id === f.id ? 'selected' : '';
+      return `<div class="file-item ${sel}" onclick="selectFile('${f.id}')" draggable="true" ondragstart="handleDragStart(event,'${f.id}')" ondragend="handleDragEnd(event)" title="${escHtml(orig)}">
+        <span class="file-icon">${icon}</span><span class="file-name">${escHtml(orig)}</span>
+        <span class="file-meta">${formatSize(f.size)}</span>
+      </div>`;
+    }).join('');
     return;
   }
   list.innerHTML = renderTree(fileTreeRoot, 0);
