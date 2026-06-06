@@ -1676,6 +1676,25 @@ async function downloadAllAsZip() {
 }
 
 /* ===== UI HELPERS ===== */
+function getOrigName(n) {
+  return n.replace(/\.svenc$/, '');
+}
+
+function getFileType(n) {
+  const ext = n.split('.').pop().toLowerCase();
+  if (['png','jpg','jpeg','gif','bmp','webp','svg'].includes(ext)) return 'img';
+  if (ext === 'md') return 'md';
+  if (['txt','log','csv','json','xml','html','css','js','ts','py','java','c','cpp','h','rb','go','rs','sh','bat','yaml','yml','toml','ini','cfg'].includes(ext)) return 'txt';
+  return 'enc';
+}
+
+function formatSize(b) {
+  if (!b || b == 0) return '';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
+}
+
 const FILE_ICONS = {
   img: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`,
   md: `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>`,
