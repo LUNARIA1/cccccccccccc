@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SecureVault — 암호화 파일 뷰어</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --border2: #3a3a3a;
+    --accent: #00e5a0;
+    --accent-dim: rgba(0,229,160,0.12);
+    --accent-dim2: rgba(0,229,160,0.06);
+    --text: #e8e8e8;
+    --text2: #888;
+    --text3: #555;
+    --danger: #ff5555;
+    --warning: #ffaa33;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'Noto Sans KR', sans-serif;
+    --radius: 6px;
+    --radius2: 10px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* Layout */
+  .app { display: flex; height: 100vh; overflow: hidden; }
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Sidebar header */
+  .sidebar-header {
+    padding: 20px 18px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--accent);
+    margin-bottom: 12px;
+  }
+  .logo-icon {
+    width: 24px; height: 24px;
+    border: 1.5px solid var(--accent);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+
+  /* Auth status pill */
+  .auth-status {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; font-family: var(--mono); color: var(--text2);
+  }
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text3); flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .dot.connected { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .dot.locked { background: var(--warning); }
+
+  /* Sidebar nav */
+  .sidebar-nav {
+    padding: 10px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-btn {
+    width: 100%;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    background: none; border: none;
+    color: var(--text2); font-size: 12px; font-family: var(--sans);
+    border-radius: var(--radius); cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .nav-btn:hover { background: var(--surface2); color: var(--text); }
+  .nav-btn.active { background: var(--accent-dim); color: var(--accent); }
+  .nav-btn .nb-icon { font-size: 15px; width: 18px; text-align: center; }
+  .nav-badge {
+    margin-left: auto;
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: 10px; font-family: var(--mono);
+    padding: 1px 6px; border-radius: 10px;
+  }
+
+  /* File list */
+  .file-list-header {
+    padding: 12px 18px 6px;
+    font-size: 10px; font-family: var(--mono);
+    color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .file-list { overflow-y: auto; flex: 1; padding: 4px 8px 8px; }
+  .file-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background 0.12s;
+    border: 1px solid transparent;
+  }
+  .file-item:hover { background: var(--surface2); }
+  .file-item.selected { background: var(--accent-dim2); border-color: var(--accent-dim); }
+  .file-icon {
+    width: 28px; height: 28px; border-radius: 4px;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0; color: var(--text2);
+  }
+  .file-icon.img { color: #a78bfa; background: rgba(167,139,250,0.08); border-color: rgba(167,139,250,0.2); }
+  .file-icon.txt { color: #60a5fa; background: rgba(96,165,250,0.08); border-color: rgba(96,165,250,0.2); }
+  .file-icon.md  { color: var(--accent); background: var(--accent-dim2); border-color: rgba(0,229,160,0.2); }
+  .file-icon.enc { color: var(--text3); }
+  .file-meta { overflow: hidden; }
+  .file-name {
+    font-size: 12px; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .file-size { font-size: 10px; color: var(--text3); font-family: var(--mono); }
+  .file-lock { margin-left: auto; font-size: 11px; color: var(--text3); }
+
+  /* Main toolbar */
+  .toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  .toolbar-title {
+    font-size: 13px; font-family: var(--mono); color: var(--text);
+    margin-right: auto;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 300px;
+  }
+  .toolbar-title .tb-path { color: var(--text3); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    color: var(--text); font-size: 12px; font-family: var(--sans);
+    cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim2); }
+  .btn.primary {
+    background: var(--accent); border-color: var(--accent);
+    color: #000; font-weight: 500;
+  }
+  .btn.primary:hover { background: #00ffb3; border-color: #00ffb3; }
+  .btn.danger { border-color: rgba(255,85,85,0.3); color: var(--danger); }
+  .btn.danger:hover { background: rgba(255,85,85,0.1); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+  .btn-icon { font-size: 14px; }
+
+  /* Content area */
+  .content-area {
+    flex: 1; overflow-y: auto; padding: 24px;
+    position: relative;
+  }
+
+  /* States */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; height: 100%;
+    gap: 12px; color: var(--text3);
+    font-family: var(--mono); font-size: 13px;
+  }
+  .empty-icon { font-size: 36px; opacity: 0.4; }
+  .empty-hint { font-size: 11px; color: var(--text3); }
+
+  /* Key input panel */
+  .key-panel {
+    max-width: 420px; margin: auto;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius2);
+    padding: 28px 28px 24px;
+  }
+  .key-panel h2 { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .key-panel .sub { font-size: 12px; color: var(--text2); margin-bottom: 20px; }
+  .key-panel label {
+    display: block; font-size: 11px; font-family: var(--mono);
+    color: var(--text2); margin-bottom: 6px; letter-spacing: 0.06em;
+  }
+  .key-input {
+    width: 100%; background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 8px 12px; color: var(--text);
+    font-family: var(--mono); font-size: 13px;
+    outline: none; transition: border 0.15s; margin-bottom: 14px;
+  }
+  .key-input:focus { border-color: var(--accent); }
+  .key-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .error-msg {
+    font-size: 11px; color: var(--danger); font-family: var(--mono);
+    margin-top: 8px; display: none;
+  }
+
+  /* Image viewer */
+  .img-viewer {
+    text-align: center;
+  }
+  .img-viewer img {
+    max-width: 100%; max-height: calc(100vh - 160px);
+    border-radius: var(--radius2);
+    border: 1px solid var(--border);
+  }
+
+  /* Text viewer */
+  .text-viewer {
+    max-width: 720px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 24px 28px;
+    font-family: var(--mono); font-size: 13px; line-height: 1.8;
+    color: var(--text); white-space: pre-wrap; word-break: break-word;
+  }
+
+  /* Markdown viewer */
+  .md-viewer {
+    max-width: 720px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius2);
+    padding: 28px 32px;
+  }
+  .md-viewer h1, .md-viewer h2, .md-viewer h3 { color: var(--text); font-weight: 500; margin: 1.4em 0 0.6em; line-height: 1.3; }
+  .md-viewer h1 { font-size: 22px; }
+  .md-viewer h2 { font-size: 17px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  .md-viewer h3 { font-size: 14px; color: var(--accent); }
+  .md-viewer p { margin-bottom: 1em; color: var(--text); }
+  .md-viewer code { font-family: var(--mono); font-size: 12px; background: var(--surface2); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+  .md-viewer pre { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; overflow-x: auto; margin-bottom: 1em; }
+  .md-viewer pre code { background: none; padding: 0; color: var(--text); }
+  .md-viewer blockquote { border-left: 2px solid var(--accent); padding-left: 14px; color: var(--text2); margin-bottom: 1em; }
+  .md-viewer ul, .md-viewer ol { padding-left: 1.4em; margin-bottom: 1em; }
+  .md-viewer li { margin-bottom: 4px; }
+  .md-viewer a { color: var(--accent); }
+  .md-viewer strong { font-weight: 500; color: var(--text); }
+  .md-viewer table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 1em; }
+  .md-viewer th { border: 1px solid var(--border); padding: 6px 10px; background: var(--surface2); font-weight: 500; }
+  .md-viewer td { border: 1px solid var(--border); padding: 6px 10px; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius2);
+    padding: 0; width: 480px; max-width: 90vw;
+    overflow: hidden;
+  }
+  .modal-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+  }
+  .modal-header h3 { font-size: 14px; font-weight: 500; }
+  .modal-close { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 18px; }
+  .modal-body { padding: 20px; }
+  .modal-footer { padding: 12px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+  .upload-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius2);
+    padding: 32px 20px; text-align: center; cursor: pointer;
+    color: var(--text2); transition: all 0.15s; margin-bottom: 16px;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); color: var(--accent); background: var(--accent-dim2); }
+  .upload-zone .uz-icon { font-size: 28px; margin-bottom: 8px; }
+  .upload-zone p { font-size: 12px; }
+  .upload-zone input { display: none; }
+  .upload-info {
+    font-size: 11px; font-family: var(--mono);
+    color: var(--text3); text-align: center;
+  }
+  .field-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .field-row .key-input { margin-bottom: 0; flex: 1; }
+  .field-row label { font-size: 11px; color: var(--text2); font-family: var(--mono); display: block; margin-bottom: 5px; }
+  .field-group { flex: 1; }
+
+  /* Toast */
+  .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 10px 14px;
+    font-size: 12px; font-family: var(--mono);
+    animation: toastIn 0.2s ease; min-width: 200px;
+  }
+  .toast.success { border-left: 2px solid var(--accent); }
+  .toast.error { border-left: 2px solid var(--danger); }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* Loading */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .tag { font-size: 10px; font-family: var(--mono); padding: 1px 6px; border-radius: 10px; background: var(--surface2); border: 1px solid var(--border); color: var(--text3); }
+  .tag.enc { color: var(--warning); border-color: rgba(255,170,51,0.2); background: rgba(255,170,51,0.06); }
+  .tag.dec { color: var(--accent); border-color: rgba(0,229,160,0.2); background: var(--accent-dim2); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon">🔐</div>
+        SecureVault
+      </div>
+      <div class="auth-status">
+        <div class="dot" id="gdot"></div>
+        <span id="gstatus">Google Drive 연결 안됨</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-btn" id="btn-connect-gdrive">
+        <span class="nb-icon">☁</span> Drive 연결
+      </button>
+      <button class="nav-btn" id="btn-upload" disabled>
+        <span class="nb-icon">↑</span> 파일 암호화 & 업로드
+      </button>
+      <button class="nav-btn" id="btn-refresh" disabled>
+        <span class="nb-icon">↻</span> 새로고침
+      </button>
+    </nav>
+
+    <div class="file-list-header">파일 목록</div>
+    <div class="file-list" id="file-list">
+      <div style="padding: 20px 10px; text-align: center; color: var(--text3); font-size: 11px; font-family: var(--mono);">
+        Drive 연결 후 파일을 불러옵니다
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="toolbar">
+      <div class="toolbar-title" id="toolbar-title">
+        <span class="tb-path">securevault /</span> 파일을 선택하세요
+      </div>
+      <button class="btn" id="btn-download" disabled>
+        <span class="btn-icon">↓</span> 다운로드
+      </button>
+      <button class="btn danger" id="btn-delete" disabled>
+        <span class="btn-icon">🗑</span> 삭제
+      </button>
+      <button class="btn" id="btn-settings">
+        <span class="btn-icon">⚙</span>
+      </button>
+    </div>
+
+    <div class="content-area" id="content-area">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">🔒</div>
+        <div>암호화된 파일 저장소</div>
+        <div class="empty-hint">Drive 연결 → 파일 선택 → 비밀번호 입력으로 복호화</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay hidden" id="upload-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🔐 파일 암호화 & 업로드</h3>
+      <button class="modal-close" id="upload-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-zone" id="upload-zone">
+        <div class="uz-icon">📁</div>
+        <p>클릭하거나 파일을 드래그하세요</p>
+        <p style="font-size:11px;color:var(--text3);margin-top:4px;">이미지, 텍스트, 마크다운 지원</p>
+        <input type="file" id="upload-file-input" accept="image/*,.txt,.md,.markdown">
+      </div>
+      <div id="selected-file-info" style="display:none; font-size:12px; font-family:var(--mono); color:var(--text2); margin-bottom:12px; padding: 8px 12px; background:var(--surface2); border-radius:var(--radius);">
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <label>암호화 비밀번호</label>
+          <input type="password" class="key-input" id="enc-password" placeholder="비밀번호 입력">
+        </div>
+        <div class="field-group">
+          <label>비밀번호 확인</label>
+          <input type="password" class="key-input" id="enc-password-confirm" placeholder="다시 입력">
+        </div>
+      </div>
+      <div class="upload-info">AES-256-GCM으로 암호화 후 Drive에 저장됩니다</div>
+      <div class="error-msg" id="upload-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="upload-cancel">취소</button>
+      <button class="btn primary" id="upload-confirm">🔐 암호화 & 업로드</button>
+    </div>
+  </div>
+</div>
+
+<!-- Decrypt Modal -->
+<div class="modal-overlay hidden" id="decrypt-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🔑 복호화</h3>
+      <button class="modal-close" id="decrypt-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:16px;" id="decrypt-filename-label">파일명</p>
+      <label style="font-size:11px;font-family:var(--mono);color:var(--text2);display:block;margin-bottom:6px;">비밀번호</label>
+      <input type="password" class="key-input" id="dec-password" placeholder="암호화 시 사용한 비밀번호">
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+        <input type="checkbox" id="remember-key" style="accent-color:var(--accent);">
+        <label for="remember-key" style="font-size:11px;color:var(--text2);">이 세션에서 비밀번호 기억 (새로고침 시 삭제)</label>
+      </div>
+      <div class="error-msg" id="decrypt-error"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="decrypt-cancel">취소</button>
+      <button class="btn primary" id="decrypt-confirm">🔓 복호화 & 열기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay hidden" id="settings-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>⚙ 설정</h3>
+      <button class="modal-close" id="settings-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <label style="font-size:11px;font-family:var(--mono);color:var(--text2);display:block;margin-bottom:6px;">Google Client ID</label>
+      <input type="text" class="key-input" id="settings-client-id" placeholder="구글 클라우드 콘솔에서 발급받은 Client ID">
+      <p style="font-size:11px;color:var(--text3);margin-top:-8px;margin-bottom:14px;">
+        <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--accent);">Google Cloud Console</a>에서 OAuth 2.0 클라이언트 ID 발급<br>
+        Drive API 활성화 + 승인된 출처에 이 페이지 주소 추가 필요
+      </p>
+      <label style="font-size:11px;font-family:var(--mono);color:var(--text2);display:block;margin-bottom:6px;">Drive 폴더 이름</label>
+      <input type="text" class="key-input" id="settings-folder" placeholder="SecureVault (기본값)" value="SecureVault">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="settings-cancel">취소</button>
+      <button class="btn primary" id="settings-save">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+/* ===================== CONFIG ===================== */
+let CLIENT_ID = localStorage.getItem('sv_client_id') || '';
+let FOLDER_NAME = localStorage.getItem('sv_folder') || 'SecureVault';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const ENC_EXT = '.svenc';
+
+/* ===================== STATE ===================== */
+let tokenClient = null;
+let accessToken = null;
+let folderId = null;
+let files = [];
+let selectedFile = null;
+let sessionPasswords = {};
+let currentDecryptFile = null;
+let uploadFileData = null;
+
+/* ===================== CRYPTO ===================== */
+async function deriveKey(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptData(data, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(password, salt);
+  const enc = new TextEncoder();
+  const magic = enc.encode('SVENC1');
+  const payload = data instanceof ArrayBuffer ? data : enc.encode(data).buffer;
+  const encrypted = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, payload);
+  // Format: [magic(6)] + [salt(16)] + [iv(12)] + [ciphertext]
+  const out = new Uint8Array(6 + 16 + 12 + encrypted.byteLength);
+  out.set(magic, 0);
+  out.set(salt, 6);
+  out.set(iv, 22);
+  out.set(new Uint8Array(encrypted), 34);
+  return out.buffer;
+}
+
+async function decryptData(buffer, password) {
+  const arr = new Uint8Array(buffer);
+  const magic = new TextDecoder().decode(arr.slice(0, 6));
+  if (magic !== 'SVENC1') throw new Error('잘못된 파일 형식 또는 손상된 파일');
+  const salt = arr.slice(6, 22);
+  const iv = arr.slice(22, 34);
+  const data = arr.slice(34);
+  const key = await deriveKey(password, salt);
+  try {
+    return await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data);
+  } catch {
+    throw new Error('비밀번호가 틀렸거나 파일이 손상되었습니다');
+  }
+}
+
+/* ===================== GOOGLE DRIVE ===================== */
+function initGapi() {
+  return new Promise((resolve) => {
+    if (!CLIENT_ID) { toast('Client ID를 먼저 설정해주세요 (⚙ 설정)', 'error'); return; }
+    const s = document.createElement('script');
+    s.src = 'https://accounts.google.com/gsi/client';
+    s.onload = () => {
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: async (resp) => {
+          if (resp.error) { toast('Drive 인증 실패: ' + resp.error, 'error'); return; }
+          accessToken = resp.access_token;
+          setConnected(true);
+          await ensureFolder();
+          await loadFiles();
+          resolve();
+        }
+      });
+      tokenClient.requestAccessToken({ prompt: 'consent' });
+    };
+    document.head.appendChild(s);
+  });
+}
+
+function setConnected(v) {
+  document.getElementById('gdot').className = 'dot ' + (v ? 'connected' : '');
+  document.getElementById('gstatus').textContent = v ? 'Drive 연결됨' : 'Google Drive 연결 안됨';
+  document.getElementById('btn-upload').disabled = !v;
+  document.getElementById('btn-refresh').disabled = !v;
+}
+
+async function driveReq(url, opts = {}) {
+  const r = await fetch(url, {
+    ...opts,
+    headers: { Authorization: 'Bearer ' + accessToken, ...(opts.headers || {}) }
+  });
+  if (!r.ok) throw new Error('Drive API 오류: ' + r.status);
+  return r;
+}
+
+async function ensureFolder() {
+  const q = `mimeType='application/vnd.google-apps.folder' and name='${FOLDER_NAME}' and trashed=false`;
+  const r = await driveReq(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`);
+  const d = await r.json();
+  if (d.files && d.files.length > 0) { folderId = d.files[0].id; return; }
+  const c = await driveReq('https://www.googleapis.com/drive/v3/files', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: FOLDER_NAME, mimeType: 'application/vnd.google-apps.folder' })
+  });
+  const cd = await c.json();
+  folderId = cd.id;
+  toast(`"${FOLDER_NAME}" 폴더 생성됨`, 'success');
+}
+
+async function loadFiles() {
+  if (!folderId) return;
+  const q = `'${folderId}' in parents and trashed=false`;
+  const r = await driveReq(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,size,modifiedTime)&orderBy=modifiedTime desc`);
+  const d = await r.json();
+  files = d.files || [];
+  renderFileList();
+}
+
+async function uploadEncrypted(buffer, filename) {
+  const meta = { name: filename, parents: [folderId] };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+  form.append('file', new Blob([buffer], { type: 'application/octet-stream' }));
+  const r = await driveReq(
+    'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+    { method: 'POST', body: form }
+  );
+  return r.json();
+}
+
+async function downloadFile(fileId) {
+  const r = await driveReq(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`);
+  return r.arrayBuffer();
+}
+
+async function deleteFile(fileId) {
+  await driveReq(`https://www.googleapis.com/drive/v3/files/${fileId}`, { method: 'DELETE' });
+}
+
+/* ===================== UI ===================== */
+function getOrigName(encName) {
+  return encName.endsWith(ENC_EXT) ? encName.slice(0, -ENC_EXT.length) : encName;
+}
+function getFileType(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (['jpg','jpeg','png','gif','webp','bmp','svg'].includes(ext)) return 'img';
+  if (['md','markdown'].includes(ext)) return 'md';
+  if (['txt'].includes(ext)) return 'txt';
+  return 'enc';
+}
+function formatSize(b) {
+  if (!b) return '—';
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  return (b/1024/1024).toFixed(1) + ' MB';
+}
+function getFileIcon(type) {
+  return { img: '🖼', md: '📝', txt: '📄', enc: '🔒' }[type] || '📄';
+}
+
+function renderFileList() {
+  const list = document.getElementById('file-list');
+  if (!files.length) {
+    list.innerHTML = '<div style="padding:20px 10px;text-align:center;color:var(--text3);font-size:11px;font-family:var(--mono);">암호화된 파일 없음</div>';
+    return;
+  }
+  list.innerHTML = files.map(f => {
+    const origName = getOrigName(f.name);
+    const type = getFileType(origName);
+    const isSelected = selectedFile && selectedFile.id === f.id;
+    return `<div class="file-item${isSelected?' selected':''}" data-id="${f.id}" onclick="selectFile('${f.id}')">
+      <div class="file-icon ${type}">${getFileIcon(type)}</div>
+      <div class="file-meta">
+        <div class="file-name" title="${origName}">${origName}</div>
+        <div class="file-size">${formatSize(f.size)}</div>
+      </div>
+      <div class="file-lock">${sessionPasswords[f.id] ? '🔓' : '🔒'}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectFile(id) {
+  selectedFile = files.find(f => f.id === id);
+  renderFileList();
+  document.getElementById('btn-download').disabled = false;
+  document.getElementById('btn-delete').disabled = false;
+  const origName = getOrigName(selectedFile.name);
+  document.getElementById('toolbar-title').innerHTML = `<span class="tb-path">securevault /</span> ${origName} <span class="tag enc">암호화됨</span>`;
+  if (sessionPasswords[id]) {
+    openFile(id, sessionPasswords[id]);
+  } else {
+    showDecryptModal(selectedFile);
+  }
+}
+
+function showContent(html) {
+  const area = document.getElementById('content-area');
+  document.getElementById('empty-state').style.display = 'none';
+  area.innerHTML = html;
+}
+
+async function openFile(fileId, password) {
+  const file = files.find(f => f.id === fileId);
+  if (!file) return;
+  const origName = getOrigName(file.name);
+  const type = getFileType(origName);
+  showContent('<div class="empty-state"><div class="spinner"></div><div style="font-size:12px;color:var(--text3)">복호화 중...</div></div>');
+  try {
+    const enc = await downloadFile(fileId);
+    const dec = await decryptData(enc, password);
+    const toolbar = document.getElementById('toolbar-title');
+    toolbar.innerHTML = `<span class="tb-path">securevault /</span> ${origName} <span class="tag dec">복호화됨</span>`;
+    if (type === 'img') {
+      const blob = new Blob([dec], { type: 'image/*' });
+      const url = URL.createObjectURL(blob);
+      showContent(`<div class="img-viewer"><img src="${url}" alt="${origName}"></div>`);
+    } else if (type === 'md') {
+      const text = new TextDecoder().decode(dec);
+      const html = marked.parse(text);
+      showContent(`<div class="md-viewer">${html}</div>`);
+    } else {
+      const text = new TextDecoder().decode(dec);
+      showContent(`<div class="text-viewer">${escHtml(text)}</div>`);
+    }
+    toast('복호화 완료: ' + origName, 'success');
+  } catch (e) {
+    toast(e.message, 'error');
+    showContent('<div class="empty-state"><div class="empty-icon">⚠</div><div>' + e.message + '</div></div>');
+    delete sessionPasswords[fileId];
+    renderFileList();
+  }
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ===================== DECRYPT MODAL ===================== */
+function showDecryptModal(file) {
+  document.getElementById('decrypt-filename-label').textContent = '파일: ' + getOrigName(file.name);
+  document.getElementById('dec-password').value = '';
+  document.getElementById('decrypt-error').style.display = 'none';
+  document.getElementById('decrypt-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('dec-password').focus(), 50);
+}
+
+document.getElementById('decrypt-confirm').onclick = async () => {
+  const pw = document.getElementById('dec-password').value;
+  if (!pw) { showError('decrypt-error', '비밀번호를 입력하세요'); return; }
+  const remember = document.getElementById('remember-key').checked;
+  if (remember) sessionPasswords[selectedFile.id] = pw;
+  document.getElementById('decrypt-modal').classList.add('hidden');
+  await openFile(selectedFile.id, pw);
+};
+
+document.getElementById('decrypt-cancel').onclick = () => document.getElementById('decrypt-modal').classList.add('hidden');
+document.getElementById('decrypt-modal-close').onclick = () => document.getElementById('decrypt-modal').classList.add('hidden');
+document.getElementById('dec-password').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('decrypt-confirm').click(); });
+
+/* ===================== UPLOAD MODAL ===================== */
+document.getElementById('btn-upload').onclick = () => {
+  uploadFileData = null;
+  document.getElementById('enc-password').value = '';
+  document.getElementById('enc-password-confirm').value = '';
+  document.getElementById('upload-error').style.display = 'none';
+  document.getElementById('selected-file-info').style.display = 'none';
+  document.getElementById('upload-modal').classList.remove('hidden');
+};
+
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('upload-file-input');
+uploadZone.onclick = () => fileInput.click();
+uploadZone.ondragover = (e) => { e.preventDefault(); uploadZone.classList.add('drag'); };
+uploadZone.ondragleave = () => uploadZone.classList.remove('drag');
+uploadZone.ondrop = (e) => { e.preventDefault(); uploadZone.classList.remove('drag'); handleFileSelect(e.dataTransfer.files[0]); };
+fileInput.onchange = () => handleFileSelect(fileInput.files[0]);
+
+function handleFileSelect(file) {
+  if (!file) return;
+  uploadFileData = file;
+  const info = document.getElementById('selected-file-info');
+  info.style.display = 'block';
+  info.textContent = `📎 ${file.name} (${formatSize(file.size)})`;
+}
+
+document.getElementById('upload-confirm').onclick = async () => {
+  if (!uploadFileData) { showError('upload-error', '파일을 선택하세요'); return; }
+  const pw = document.getElementById('enc-password').value;
+  const pw2 = document.getElementById('enc-password-confirm').value;
+  if (!pw) { showError('upload-error', '비밀번호를 입력하세요'); return; }
+  if (pw !== pw2) { showError('upload-error', '비밀번호가 일치하지 않습니다'); return; }
+  const btn = document.getElementById('upload-confirm');
+  btn.disabled = true; btn.textContent = '암호화 중...';
+  try {
+    const buf = await uploadFileData.arrayBuffer();
+    const enc = await encryptData(buf, pw);
+    const encName = uploadFileData.name + ENC_EXT;
+    await uploadEncrypted(enc, encName);
+    document.getElementById('upload-modal').classList.add('hidden');
+    toast(uploadFileData.name + ' 암호화 & 업로드 완료', 'success');
+    await loadFiles();
+  } catch (e) {
+    showError('upload-error', e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '🔐 암호화 & 업로드';
+  }
+};
+
+document.getElementById('upload-cancel').onclick = () => document.getElementById('upload-modal').classList.add('hidden');
+document.getElementById('upload-modal-close').onclick = () => document.getElementById('upload-modal').classList.add('hidden');
+
+/* ===================== DELETE ===================== */
+document.getElementById('btn-delete').onclick = async () => {
+  if (!selectedFile) return;
+  const name = getOrigName(selectedFile.name);
+  if (!confirm(`"${name}" 를 Drive에서 삭제하시겠습니까?`)) return;
+  try {
+    await deleteFile(selectedFile.id);
+    delete sessionPasswords[selectedFile.id];
+    selectedFile = null;
+    document.getElementById('btn-download').disabled = true;
+    document.getElementById('btn-delete').disabled = true;
+    document.getElementById('toolbar-title').innerHTML = '<span class="tb-path">securevault /</span> 파일을 선택하세요';
+    showContent('<div class="empty-state" id="empty-state"><div class="empty-icon">🔒</div><div>암호화된 파일 저장소</div><div class="empty-hint">Drive 연결 → 파일 선택 → 비밀번호 입력으로 복호화</div></div>');
+    toast(name + ' 삭제됨', 'success');
+    await loadFiles();
+  } catch(e) { toast('삭제 실패: ' + e.message, 'error'); }
+};
+
+/* ===================== DOWNLOAD ===================== */
+document.getElementById('btn-download').onclick = async () => {
+  if (!selectedFile) return;
+  const pw = sessionPasswords[selectedFile.id];
+  if (!pw) { showDecryptModal(selectedFile); return; }
+  try {
+    const enc = await downloadFile(selectedFile.id);
+    const dec = await decryptData(enc, pw);
+    const origName = getOrigName(selectedFile.name);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([dec]));
+    a.download = origName;
+    a.click();
+    toast(origName + ' 다운로드 완료', 'success');
+  } catch(e) { toast(e.message, 'error'); }
+};
+
+/* ===================== SETTINGS ===================== */
+document.getElementById('btn-settings').onclick = () => {
+  document.getElementById('settings-client-id').value = CLIENT_ID;
+  document.getElementById('settings-folder').value = FOLDER_NAME;
+  document.getElementById('settings-modal').classList.remove('hidden');
+};
+document.getElementById('settings-save').onclick = () => {
+  CLIENT_ID = document.getElementById('settings-client-id').value.trim();
+  FOLDER_NAME = document.getElementById('settings-folder').value.trim() || 'SecureVault';
+  localStorage.setItem('sv_client_id', CLIENT_ID);
+  localStorage.setItem('sv_folder', FOLDER_NAME);
+  document.getElementById('settings-modal').classList.add('hidden');
+  toast('설정 저장됨', 'success');
+};
+document.getElementById('settings-cancel').onclick = () => document.getElementById('settings-modal').classList.add('hidden');
+document.getElementById('settings-modal-close').onclick = () => document.getElementById('settings-modal').classList.add('hidden');
+
+/* ===================== CONNECT ===================== */
+document.getElementById('btn-connect-gdrive').onclick = () => initGapi();
+document.getElementById('btn-refresh').onclick = () => loadFiles();
+
+/* ===================== UTILS ===================== */
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+function toast(msg, type = 'success') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+/* Auto-open settings if no client id */
+window.addEventListener('load', () => {
+  if (!CLIENT_ID) {
+    setTimeout(() => {
+      document.getElementById('settings-modal').classList.remove('hidden');
+      toast('시작하려면 Google Client ID를 설정하세요', 'error');
+    }, 600);
+  }
+});
+</script>
+</body>
+</html>
