@@ -1765,7 +1765,10 @@ function renderFileList() {
     }).join('');
     return;
   }
-  list.innerHTML = renderTree(fileTreeRoot, 0);
+  const treeHtml = renderTree(fileTreeRoot, 0);
+  console.log('[SecureVault] renderTree output length:', treeHtml.length, 'first 200 chars:', treeHtml.substring(0, 200));
+  list.innerHTML = treeHtml;
+  console.log('[SecureVault] file-list childElementCount after render:', list.childElementCount);
 }
 
 function showContent(html) {
