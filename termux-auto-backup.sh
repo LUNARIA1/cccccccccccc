@@ -3,12 +3,15 @@
 # --- 색상 설정 ---
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo -e "${GREEN}=======================================${NC}"
-echo -e "${GREEN}  PocketRisu 자동 백업 설정 스크립트   ${NC}"
+echo -e "${GREEN}  PocketRisu 자동 백업 설정 스크립트 (v1.1) ${NC}"
 echo -e "${GREEN}=======================================${NC}"
+echo -e "${CYAN}✨ [업데이트 내역] 0바이트 빈 파일 업로드 방지 및 Cron 환경변수 문제 해결 적용됨${NC}"
+echo -e "---------------------------------------"
 echo -e "${YELLOW}※ 주의: 이 스크립트는 사전에 rclone config 설정이 완료되어 있어야 합니다.${NC}"
 echo -e "${YELLOW}※ rclone 원격 이름은 'gdrive'로 가정합니다.${NC}\n"
 
@@ -17,7 +20,7 @@ BACKUP_SCRIPT_PATH="$HOME/backup_risu_cron.sh"
 # 기존에 설정된 백업이 있는지 확인하고 안내
 if [ -f "$BACKUP_SCRIPT_PATH" ]; then
     echo -e "${YELLOW}[안내] 이미 백업이 설정되어 있습니다.${NC}"
-    echo -e "새로운 주기를 선택하시면 기존 설정은 자동으로 덮어씌워집니다.\n"
+    echo -e "새로운 주기를 선택하시면 기존 설정은 안전하게 최신 버전으로 덮어씌워집니다.\n"
 fi
 
 # 1단계: 백업 주기 선택 받기 (0번 삭제 옵션 추가)
@@ -107,7 +110,7 @@ EOF
 
 # 스크립트에 실행 권한 부여
 chmod +x "$BACKUP_SCRIPT_PATH"
-echo "- 백업 쉘 스크립트 덮어쓰기 완료: $BACKUP_SCRIPT_PATH"
+echo "- 백업 쉘 스크립트 덮어쓰기(v1.1) 완료: $BACKUP_SCRIPT_PATH"
 
 # 3단계: 크론탭(Crontab) 등록
 CRON_TMP_FILE="$TMPDIR/mycron"
