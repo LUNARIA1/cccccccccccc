@@ -33,7 +33,7 @@ echo "---------------------------------------"
 # curl | bash 환경에서 키보드 입력을 강제로 받기 위해 </dev/tty 유지
 read -p "번호를 입력하세요 (0-5): " INTERVAL_CHOICE </dev/tty
 
-# [새로운 기능] 0번 선택 시 백업 삭제 로직
+# 0번 선택 시 백업 삭제 로직
 if [ "$INTERVAL_CHOICE" == "0" ]; then
     echo -e "\n▶ 기존 백업 설정을 삭제합니다..."
     
@@ -66,6 +66,11 @@ echo -e "\n▶ [${STR_TIME}] 주기로 설정을 시작합니다...\n"
 cat << 'EOF' > "$BACKUP_SCRIPT_PATH"
 #!/bin/bash
 
+# [핵심 해결책] Termux의 환경 변수와 경로를 강제로 불러오기
+source /data/data/com.termux/files/usr/etc/profile
+export PATH=/data/data/com.termux/files/usr/bin:$PATH
+export HOME=/data/data/com.termux/files/home
+
 # 경로 및 변수 설정
 SOURCE_DIR="$HOME/PocketRisu/save"
 BACKUP_TEMP_DIR="$HOME/risu_tmp_backups"
@@ -79,16 +84,21 @@ if [ ! -d "$SOURCE_DIR" ]; then
     exit 1
 fi
 
-# 압축 및 업로드
+# 압축 진행
 mkdir -p "$BACKUP_TEMP_DIR"
-tar -czf "$BACKUP_TEMP_DIR/$BACKUP_FILE" -C "$(dirname "$SOURCE_DIR")" "$(basename "$SOURCE_DIR")"
 
-rclone copy "$BACKUP_TEMP_DIR/$BACKUP_FILE" "$RCLONE_REMOTE"
-
-if [ $? -eq 0 ]; then
-    echo "[${TIMESTAMP}] 백업 및 업로드 성공 (${BACKUP_FILE})" >> "$HOME/backup_log.txt"
+# [안전장치] tar 압축이 '완벽하게 성공'했을 때만 업로드 진행
+if tar -czf "$BACKUP_TEMP_DIR/$BACKUP_FILE" -C "$(dirname "$SOURCE_DIR")" "$(basename "$SOURCE_DIR")"; then
+    rclone copy "$BACKUP_TEMP_DIR/$BACKUP_FILE" "$RCLONE_REMOTE"
+    
+    if [ $? -eq 0 ]; then
+        echo "[${TIMESTAMP}] 백업 및 업로드 성공 (${BACKUP_FILE})" >> "$HOME/backup_log.txt"
+    else
+        echo "[${TIMESTAMP}] 구글 드라이브 업로드 실패" >> "$HOME/backup_log.txt"
+    fi
 else
-    echo "[${TIMESTAMP}] 구글 드라이브 업로드 실패" >> "$HOME/backup_log.txt"
+    # 압축 실패 시 0바이트 파일을 업로드하지 않고 중단
+    echo "[${TIMESTAMP}] tar 압축 실패 (0바이트 방지)" >> "$HOME/backup_log.txt"
 fi
 
 # 임시 파일 삭제
@@ -99,7 +109,7 @@ EOF
 chmod +x "$BACKUP_SCRIPT_PATH"
 echo "- 백업 쉘 스크립트 덮어쓰기 완료: $BACKUP_SCRIPT_PATH"
 
-# 3단계: 크론탭(Crontab) 등록 (권한 오류 해결된 버전 유지)
+# 3단계: 크론탭(Crontab) 등록
 CRON_TMP_FILE="$TMPDIR/mycron"
 crontab -l 2>/dev/null | grep -v "backup_risu_cron.sh" > "$CRON_TMP_FILE"
 echo "$CRON_TIME $BACKUP_SCRIPT_PATH" >> "$CRON_TMP_FILE"
