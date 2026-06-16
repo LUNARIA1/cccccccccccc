@@ -7,7 +7,7 @@
 # causing duplicate data accumulation and lost chunks.
 #
 # Usage (from Termux):
-#   curl -fsSL https://raw.githubusercontent.com/<YOUR_FORK>/PocketRisu/main/scripts/vertex-ai-streaming-patch.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/LUNARIA1/cccccccccccc/refs/heads/main/vertex-ai-streaming-patch-2.sh | bash
 #
 # Or, if you cloned the repo:
 #   bash ~/PocketRisu/scripts/vertex-ai-streaming-patch.sh
