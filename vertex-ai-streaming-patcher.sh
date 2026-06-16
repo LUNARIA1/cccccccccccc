@@ -9,7 +9,7 @@
 # (broken) patch attempt.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/LUNARIA1/cccccccccccc/main/vertex-ai-streaming-patcher.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/LUNARIA1/cccccccccccc/refs/heads/main/vertex-ai-streaming-patcher.sh | bash
 # =============================================================================
 set -euo pipefail
 
