@@ -6,7 +6,7 @@ set -euo pipefail
 REPO="${HOME}/PocketRisu"
 TARGET="${REPO}/src/ts/process/request/google.ts"
 BACKUP="${TARGET}.bak"
-PATCHER="/tmp/_pocketrisu_patch.js"
+PATCHER="${TMPDIR:-/tmp}/_pocketrisu_patch.js"
 
 G='\033[0;32m'; Y='\033[1;33m'; R='\033[0;31m'; C='\033[0;36m'; E='\033[0m'
 ok()   { echo -e "${G}[OK]${E}    $*"; }
