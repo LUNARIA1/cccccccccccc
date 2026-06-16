@@ -10,7 +10,7 @@
 #   curl -fsSL https://raw.githubusercontent.com/LUNARIA1/cccccccccccc/refs/heads/main/vertex-ai-streaming-patch-2.sh | bash
 #
 # Or, if you cloned the repo:
-#   bash ~/PocketRisu/scripts/vertex-ai-streaming-patch.sh
+#   bash ~/PocketRisu/scripts/vertex-ai-streaming-patch-2.sh
 #
 # After patching the script will ask whether to rebuild automatically.
 # =============================================================================
