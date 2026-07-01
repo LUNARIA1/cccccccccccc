@@ -34,7 +34,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body {
-            background-color: var(--color-ivory-canvas); /* 절대 순백색(White) 금지 */
+            background-color: var(--color-ivory-canvas);
             color: var(--color-ink-black);
             font-family: var(--font-anthropic-sans);
             font-weight: 400;
@@ -55,7 +55,7 @@
         
         .hero-title {
             font-size: 56px;
-            font-weight: 330; /* 문학적 절제미를 위한 얇은 세리프 */
+            font-weight: 330;
             line-height: 1.2;
             margin-bottom: 24px;
         }
@@ -85,7 +85,6 @@
             justify-content: space-between;
             align-items: center;
             padding: 24px 0;
-            /* 그림자나 하단 테두리 없음 */
         }
         
         .nav-logo {
@@ -97,7 +96,6 @@
             gap: 8px;
         }
         
-        /* 앰버톤의 아주 작은 포인트 마크 (Claude 스타일) */
         .nav-logo::before {
             content: "❈";
             color: #d97757;
@@ -114,7 +112,7 @@
 
         .nav-actions { display: flex; gap: 8px; }
 
-        /* Buttons (No shadows, 9.6px radius) */
+        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -122,7 +120,7 @@
             padding: 8px 20px;
             border-radius: 9.6px;
             font-family: var(--font-anthropic-sans);
-            font-weight: 500; /* 430 대체 */
+            font-weight: 500;
             font-size: 15px;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -156,6 +154,12 @@
             font-size: 18px;
             line-height: 1.56;
         }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            margin-top: 32px;
+        }
 
         /* Forms & Inputs */
         .auth-card {
@@ -163,7 +167,6 @@
             border: 1px solid var(--color-linen-border);
             border-radius: 16px;
             padding: 32px;
-            /* 그림자 절대 사용 금지 */
         }
 
         .input-group { margin-bottom: 16px; }
@@ -182,7 +185,6 @@
         .input-field:focus {
             outline: none;
             border-color: var(--color-charcoal);
-            /* Focus ring이나 그림자 없이 보더 색상만 변경 */
         }
 
         /* Segmented Toggle */
@@ -198,7 +200,7 @@
             flex: 1;
             text-align: center;
             padding: 6px 12px;
-            border-radius: 6px; /* 9.6px 컨테이너 내부 */
+            border-radius: 6px;
             font-size: 14px;
             font-weight: 500;
             color: var(--color-stone-gray);
@@ -223,6 +225,8 @@
             border: 1px solid var(--color-linen-border);
             border-radius: 16px;
             padding: 32px;
+            display: flex;
+            flex-direction: column;
         }
 
         .card-title {
@@ -236,10 +240,10 @@
             text-decoration-color: var(--color-dust-blue);
             text-decoration-thickness: 2px;
             text-underline-offset: 4px;
+            margin-bottom: auto; /* Push checklist to bottom */
+            display: inline-block;
         }
-        .card-link:hover {
-            color: var(--color-dust-blue);
-        }
+        .card-link:hover { color: var(--color-dust-blue); }
 
         /* Checklist */
         .checklist {
@@ -260,6 +264,65 @@
             left: 0;
             color: var(--color-charcoal);
             font-weight: 600;
+        }
+
+        /* =========================================
+           Mobile & Tablet Responsive Adjustments 
+           ========================================= */
+
+        /* 테블릿 (Tablet) */
+        @media (max-width: 992px) {
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 48px;
+                padding: 48px 0;
+            }
+            .card-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* 모바일 (Mobile) */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 20px;
+            }
+            /* 네비게이션: 모바일에서는 링크와 보조버튼 숨김 */
+            .nav-links {
+                display: none; 
+            }
+            .nav-actions .btn-ghost {
+                display: none;
+            }
+            /* 폰트 크기 및 여백 최적화 */
+            .hero-title {
+                font-size: 40px; 
+            }
+            .hero-content p {
+                font-size: 16px;
+            }
+            /* 버튼들 가로 배열 -> 세로 배열로 변경 및 100% 꽉 채우기 */
+            .hero-buttons {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .hero-buttons .btn {
+                width: 100%;
+            }
+            /* 카드 그리드: 1열로 변경 */
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+            .section-title {
+                font-size: 26px;
+            }
+            .section-gap {
+                margin-bottom: 48px;
+            }
+            /* 모바일에서 카드 내부 패딩 살짝 줄임 */
+            .auth-card, .card {
+                padding: 24px;
+            }
         }
     </style>
 </head>
@@ -287,7 +350,7 @@
                 <p class="text-body">
                     최근 <strong>디자인 시스템 마크다운(DESIGN.md)</strong> 파일들을 활용하여 코드를 생성하는 방식이 각광받고 있습니다. LLM에게 규칙이 담긴 마크다운만 던져주면 복잡한 CSS 없이도 완벽한 UI를 뱉어냅니다.
                 </p>
-                <div style="display: flex; gap: 16px; margin-top: 32px;">
+                <div class="hero-buttons">
                     <button class="btn btn-primary">Start building</button>
                     <button class="btn btn-ghost">Read DESIGN.md</button>
                 </div>
