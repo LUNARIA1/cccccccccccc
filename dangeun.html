@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DESIGN.md 활용 가이드</title>
+  <!-- 시스템 폰트 원칙에 따라 Pretendard 로드 -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css" />
+  <style>
+    /* 1. 디자인 토큰 정의 (Palette & Semantic) */
+    :root {
+      /* Colors */
+      --karrot-primary: #ff6600;
+      --karrot-primary-hover: #e14d00;
+      --karrot-bg-default: #ffffff;
+      --karrot-bg-fill: #f7f8f9;
+      --karrot-bg-basement: #f3f4f5;
+      --karrot-fg-neutral: #1a1c20;
+      --karrot-fg-muted: #555d6d;
+      --karrot-fg-subtle: #868b94;
+      --karrot-fg-informative: #217cf9;
+      --karrot-stroke-subtle: rgba(0, 0, 0, 0.08);
+      --karrot-stroke-neutral: #dcdee3;
+      
+      /* Typography System */
+      --font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+      
+      /* Shadows */
+      --shadow-s1: 0px 1px 4px rgba(0, 0, 0, 0.08);
+      --shadow-s2: 0px 2px 10px rgba(0, 0, 0, 0.10);
+    }
+
+    /* 2. 글로벌 초기화 및 레이아웃 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--karrot-bg-basement); /* 바깥 배경은 회색으로 두어 모바일 화면을 강조 */
+      color: var(--karrot-fg-neutral);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+    }
+
+    /* 모바일 우선 웹 레이아웃 (최대 640px) */
+    .app-container {
+      max-width: 640px;
+      margin: 0 auto;
+      background-color: var(--karrot-bg-default);
+      min-height: 100vh;
+      position: relative;
+      padding-bottom: 84px; /* 하단 버튼 영역 확보 */
+    }
+
+    /* 3. 내비게이션 바 (App Bar) */
+    .app-bar {
+      height: 56px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--karrot-stroke-subtle);
+      position: sticky;
+      top: 0;
+      background-color: var(--karrot-bg-default);
+      z-index: 10;
+    }
+
+    .app-bar-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--karrot-fg-neutral);
+      flex: 1;
+      text-align: center;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      padding: 8px;
+      margin: -8px; /* 터치 영역 48px 확보용 */
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--karrot-fg-neutral);
+    }
+
+    /* 4. 타이포그래피 유틸리티 */
+    .display-large { font-size: 24px; font-weight: 700; line-height: 32px; letter-spacing: -0.02em; }
+    .heading-large { font-size: 20px; font-weight: 700; line-height: 27px; letter-spacing: -0.02em; }
+    .title { font-size: 16px; font-weight: 500; line-height: 22px; letter-spacing: -0.02em; }
+    .body-text { font-size: 14px; font-weight: 400; line-height: 19px; color: var(--karrot-fg-muted); }
+    .body-small { font-size: 13px; font-weight: 400; line-height: 18px; color: var(--karrot-fg-subtle); }
+
+    /* 5. 컴포넌트 */
+    .section {
+      padding: 24px 16px; /* 4px 그리드 기반 16px 좌우 여백 */
+    }
+
+    .card {
+      background-color: var(--karrot-bg-default);
+      border: 1px solid var(--karrot-stroke-subtle);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: var(--shadow-s2);
+      margin-bottom: 16px;
+    }
+
+    .card-fill {
+      background-color: var(--karrot-bg-fill);
+      border-radius: 12px;
+      padding: 20px 16px;
+      margin-bottom: 24px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      background-color: var(--karrot-bg-basement);
+      color: var(--karrot-fg-neutral);
+      border-radius: 9999px;
+      height: 32px;
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 500;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    /* 리스트 아이템 (거래 게시글 스타일) */
+    .list-item {
+      display: flex;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--karrot-stroke-subtle);
+      gap: 16px;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+
+    .list-item:active {
+      background-color: var(--karrot-bg-fill);
+    }
+
+    .list-item-img {
+      width: 108px;
+      height: 108px;
+      border-radius: 8px;
+      background-color: var(--karrot-bg-basement);
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .list-item-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding-top: 4px;
+    }
+
+    .list-item-title {
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--karrot-fg-neutral);
+      margin-bottom: 4px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .list-item-meta {
+      font-size: 13px;
+      color: var(--karrot-fg-subtle);
+      margin-bottom: 4px;
+    }
+
+    .list-item-price {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--karrot-fg-neutral);
+    }
+
+    /* 버튼 컴포넌트 */
+    .bottom-cta-container {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 640px;
+      padding: 16px;
+      background-color: var(--karrot-bg-default);
+      border-top: 1px solid var(--karrot-stroke-subtle);
+      z-index: 20;
+    }
+
+    .btn-primary {
+      width: 100%;
+      height: 52px;
+      background-color: var(--karrot-primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      font-family: var(--font-family);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.15s ease;
+    }
+
+    .btn-primary:active {
+      background-color: var(--karrot-primary-hover);
+    }
+
+    /* 링크 스타일 */
+    .link-list {
+      list-style: none;
+      margin-top: 16px;
+    }
+
+    .link-list li {
+      margin-bottom: 12px;
+    }
+
+    .link-list a {
+      color: var(--karrot-fg-informative);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- 내비게이션 바 -->
+    <header class="app-bar">
+      <button class="icon-btn" aria-label="뒤로가기">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <h1 class="app-bar-title">UI 가이드</h1>
+      <div style="width: 24px;"></div> <!-- 타이틀 중앙 정렬용 여백 -->
+    </header>
+
+    <!-- 히어로 섹션 -->
+    <section class="section">
+      <h2 class="display-large" style="margin-bottom: 12px;">LLM에게 디자인을<br>가르치는 방법이에요</h2>
+      <p class="body-text" style="margin-bottom: 24px;">
+        AI에게 코딩을 맡길 때 디자인이 아쉽지 않으셨나요? 각 회사의 고유한 <strong>DESIGN.md</strong> 파일을 프롬프트에 포함하면, 이 페이지처럼 완벽하게 브랜딩된 UI를 얻을 수 있어요.
+      </p>
+
+      <!-- 정보성 안내 카드 -->
+      <div class="card-fill">
+        <h3 class="title" style="margin-bottom: 8px;">디자인 마크다운 파일은 어디서 구하나요?</h3>
+        <p class="body-text">아래와 같은 사이트에서 유명 기업들의 디자인 시스템 마크다운(MD) 파일을 제공하고 있어요. 다운로드해서 프롬프트에 첨부해 보세요.</p>
+        
+        <ul class="link-list">
+          <li>
+            <a href="https://oh-my-design.kr/builder" target="_blank">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+              oh-my-design.kr/builder
+            </a>
+          </li>
+          <li>
+            <a href="https://getdesign.md/" target="_blank">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+              getdesign.md
+            </a>
+          </li>
+          <li>
+            <a href="https://styles.refero.design/" target="_blank">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+              styles.refero.design
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 태그 칩 -->
+      <div style="margin-bottom: 24px;">
+        <span class="chip">UI 자동화</span>
+        <span class="chip">프롬프트 엔지니어링</span>
+        <span class="chip">디자인 시스템</span>
+      </div>
+    </section>
+
+    <!-- 당근마켓 리스트 스타일 예시 -->
+    <section class="section" style="padding-top: 0;">
+      <h3 class="heading-large" style="margin-bottom: 16px;">이렇게 적용되어요</h3>
+      
+      <div>
+        <!-- 리스트 아이템 1 -->
+        <article class="list-item">
+          <!-- 실제 이미지 대신 자리표시자 -->
+          <div class="list-item-img" style="background-image: url('https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=200'); background-size: cover;"></div>
+          <div class="list-item-content">
+            <h4 class="list-item-title">맥북 프로 16인치 M3 Max 미개봉 팝니다</h4>
+            <span class="list-item-meta">판교동 · 10분 전</span>
+            <span class="list-item-price">4,500,000원</span>
+          </div>
+        </article>
+
+        <!-- 리스트 아이템 2 -->
+        <article class="list-item">
+          <div class="list-item-img" style="background-image: url('https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=200'); background-size: cover;"></div>
+          <div class="list-item-content">
+            <h4 class="list-item-title">원목 거실 테이블 무료나눔해요</h4>
+            <span class="list-item-meta">강남구 역삼동 · 1시간 전</span>
+            <span class="list-item-price">나눔 🧡</span>
+          </div>
+        </article>
+
+        <!-- 리스트 아이템 3 -->
+        <article class="list-item" style="border-bottom: none;">
+          <div class="list-item-img" style="display:flex; align-items:center; justify-content:center; background-color: var(--karrot-bg-fill);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--karrot-stroke-neutral)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+          </div>
+          <div class="list-item-content">
+            <h4 class="list-item-title">자전거 헬멧 (한 번 썼어요)</h4>
+            <span class="list-item-meta">서초구 양재동 · 2시간 전</span>
+            <span class="list-item-price">15,000원</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 하단 고정 CTA -->
+    <div class="bottom-cta-container">
+      <button class="btn-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+        디자인 마크다운 파일 구경하기
+      </button>
+    </div>
+
+  </div>
+
+</body>
+</html>
